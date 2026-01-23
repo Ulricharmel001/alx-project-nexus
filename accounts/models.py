@@ -1,4 +1,5 @@
-from django.contrib.auth.models import (AbstractUser, BaseUserManager, PermissionsMixin)
+from django.contrib.auth.models import (AbstractUser, BaseUserManager,
+                                        PermissionsMixin)
 from django.db import models
 from django.utils import timezone
 
@@ -58,5 +59,3 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.email}"
-
-
