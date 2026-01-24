@@ -1,6 +1,7 @@
+from django.contrib.auth import get_user_model
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib.auth import get_user_model
+
 from .models import UserProfile
 
 User = get_user_model()
@@ -20,5 +21,5 @@ def save_user_profile(sender, instance, **kwargs):
     """
     Save the user profile when the user is saved
     """
-    if hasattr(instance, 'userprofile'):
+    if hasattr(instance, "userprofile"):
         instance.userprofile.save()
