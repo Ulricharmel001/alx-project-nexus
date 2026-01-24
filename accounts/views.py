@@ -1,29 +1,26 @@
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework_simplejwt.tokens import RefreshToken
-from drf_yasg.utils import swagger_auto_schema
-from drf_yasg import openapi
 
-from .serializers import (
-    RegistrationSerializer,
-    LoginSerializer,
-    UserDetailSerializer,
-    ChangePasswordSerializer,
-    PasswordResetRequestSerializer,
-    PasswordResetConfirmSerializer,
-    UserProfileSerializer,
-)
 from .models import CustomUser, UserProfile
+from .serializers import (ChangePasswordSerializer, LoginSerializer,
+                          PasswordResetConfirmSerializer,
+                          PasswordResetRequestSerializer,
+                          RegistrationSerializer, UserDetailSerializer,
+                          UserProfileSerializer)
 
 
 class RegistrationView(APIView):
     """
     User registration endpoint.
-    
+
     POST: Register a new user with email, first_name, last_name, and password.
     """
+
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
@@ -65,9 +62,10 @@ class RegistrationView(APIView):
 class LoginView(APIView):
     """
     User login endpoint.
-    
+
     POST: Authenticate user with email and password, returns JWT tokens.
     """
+
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
@@ -109,10 +107,11 @@ class LoginView(APIView):
 class LogoutView(APIView):
     """
     User logout endpoint.
-    
+
     POST: Blacklist the refresh token to logout the user.
     Requires authentication.
     """
+
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -146,11 +145,12 @@ class LogoutView(APIView):
 class UserDetailView(APIView):
     """
     User detail endpoint.
-    
+
     GET: Retrieve the authenticated user's information.
     PUT: Update the authenticated user's information (partial updates supported).
     Requires authentication.
     """
+
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -196,11 +196,12 @@ class UserDetailView(APIView):
 class ChangePasswordView(APIView):
     """
     Change password endpoint.
-    
+
     POST: Change the authenticated user's password.
     Requires old password and new password confirmation.
     Requires authentication.
     """
+
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -228,10 +229,11 @@ class ChangePasswordView(APIView):
 class PasswordResetRequestView(APIView):
     """
     Password reset request endpoint.
-    
+
     POST: Request a password reset link by providing email.
     The link will be sent to the user's email.
     """
+
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
@@ -255,10 +257,11 @@ class PasswordResetRequestView(APIView):
 class PasswordResetConfirmView(APIView):
     """
     Password reset confirmation endpoint.
-    
+
     POST: Confirm password reset using the token sent via email.
     Requires uidb64 and token from the password reset link.
     """
+
     permission_classes = [AllowAny]
 
     @swagger_auto_schema(
@@ -284,11 +287,12 @@ class PasswordResetConfirmView(APIView):
 class UserProfileView(APIView):
     """
     User profile endpoint.
-    
+
     GET: Retrieve the authenticated user's profile information.
     PUT: Update the authenticated user's profile (partial updates supported).
     Requires authentication.
     """
+
     permission_classes = [IsAuthenticated]
 
     @swagger_auto_schema(
@@ -338,7 +342,10 @@ class UserProfileView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(
-                    {"message": "Profile updated successfully", "data": serializer.data},
+                    {
+                        "message": "Profile updated successfully",
+                        "data": serializer.data,
+                    },
                     status=status.HTTP_200_OK,
                 )
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

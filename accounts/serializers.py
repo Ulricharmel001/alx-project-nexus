@@ -8,7 +8,9 @@ from .models import CustomUser, UserProfile
 def validate_password_strength(value):
     """Validate password strength: min 8 chars and not entirely numeric"""
     if len(value) < 8:
-        raise serializers.ValidationError("Password must be at least 8 characters long.")
+        raise serializers.ValidationError(
+            "Password must be at least 8 characters long."
+        )
     if value.isdigit():
         raise serializers.ValidationError("Password cannot be entirely numeric.")
 
@@ -37,7 +39,10 @@ class RegistrationSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
         fields = ["email", "first_name", "last_name", "password", "password2"]
-        extra_kwargs = {"first_name": {"required": True}, "last_name": {"required": True}}
+        extra_kwargs = {
+            "first_name": {"required": True},
+            "last_name": {"required": True},
+        }
 
     def validate(self, data):
         if data["password"] != data["password2"]:
@@ -59,13 +64,13 @@ class LoginSerializer(serializers.Serializer):
         email, password = data.get("email"), data.get("password")
         if not email or not password:
             raise serializers.ValidationError("Email and password are required.")
-        
+
         user = authenticate(username=email, password=password)
         if not user:
             raise serializers.ValidationError("Invalid email or password.")
         if not user.is_active:
             raise serializers.ValidationError("User account is inactive.")
-        
+
         data["user"] = user
         return data
 
@@ -75,12 +80,23 @@ class UserDetailSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CustomUser
-        fields = ["id", "email", "first_name", "last_name", "role", "is_active", "date_joined", "profile"]
+        fields = [
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "is_active",
+            "date_joined",
+            "profile",
+        ]
         read_only_fields = ["id", "date_joined"]
 
 
 class ChangePasswordSerializer(serializers.Serializer):
-    old_password = serializers.CharField(write_only=True, style={"input_type": "password"})
+    old_password = serializers.CharField(
+        write_only=True, style={"input_type": "password"}
+    )
     new_password = serializers.CharField(
         write_only=True,
         required=True,
@@ -102,9 +118,13 @@ class ChangePasswordSerializer(serializers.Serializer):
 
     def validate(self, data):
         if data["new_password"] != data["new_password2"]:
-            raise serializers.ValidationError({"new_password": "Passwords didn't match."})
+            raise serializers.ValidationError(
+                {"new_password": "Passwords didn't match."}
+            )
         if data.get("old_password") == data["new_password"]:
-            raise serializers.ValidationError({"new_password": "New password must differ from old password."})
+            raise serializers.ValidationError(
+                {"new_password": "New password must differ from old password."}
+            )
         return data
 
     def save(self, **kwargs):
