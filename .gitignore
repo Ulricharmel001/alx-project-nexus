@@ -99,3 +99,16 @@ venv/
 ENV/
 env.bak/
 venv.bak/
+
+backup/
+*.backup
+backup.json
+ecommerce_backup.sql
+
+#migration files
+*/migrations/*.py
+*/migrations/*.pyc
+!*/migrations/__init__.py
+# Ignore test coverage files
+htmlcov/
+.tox/
