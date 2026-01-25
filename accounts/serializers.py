@@ -162,3 +162,23 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if data["password"] != data["password2"]:
             raise serializers.ValidationError({"password": "Passwords didn't match."})
         return data
+
+
+class GoogleAuthSerializer(serializers.Serializer):
+    """Serializer for Google OAuth authentication"""
+    token = serializers.CharField(required=True, write_only=True)
+    
+    def validate_token(self, value):
+        if not value:
+            raise serializers.ValidationError("Token cannot be empty.")
+        return value
+
+
+class GoogleCallbackSerializer(serializers.Serializer):
+    """Serializer for Google OAuth callback"""
+    code = serializers.CharField(required=True, write_only=True)
+    
+    def validate_code(self, value):
+        if not value:
+            raise serializers.ValidationError("Authorization code is required.")
+        return value
