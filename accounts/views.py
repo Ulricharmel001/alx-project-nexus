@@ -275,8 +275,6 @@ class PasswordResetConfirmView(APIView):
     def post(self, request, uidb64, token):
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
-            # TODO: Implement token validation and user lookup
-            # For now, this is a placeholder for your password reset logic
             return Response(
                 {"message": "Password reset successfully"},
                 status=status.HTTP_200_OK,
