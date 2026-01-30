@@ -60,4 +60,31 @@ urlpatterns = [
         views.PasswordResetConfirmView.as_view(),
         name="password-reset-confirm",
     ),
+    # Email verification
+    path(
+        "email/verify/",
+        views.EmailVerificationView.as_view(),
+        name="email-verify",
+    ),
+    path(
+        "email/resend/",
+        views.ResendVerificationEmailView.as_view(),
+        name="email-resend",
+    ),
+    # Google OAuth
+    path(
+        "google/login/",
+        views.GoogleLoginView.as_view(),
+        name="google-login",
+    ),
+    path(
+        "google/callback/",
+        views.GoogleCallbackView.as_view(),
+        name="google-callback",
+    ),
+    path(
+        "google/token/",
+        views.GoogleTokenView.as_view(),
+        name="google-token",
+    ),
 ]

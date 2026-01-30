@@ -135,12 +135,41 @@ class ChangePasswordSerializer(serializers.Serializer):
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
+    """
+    Serializer for password reset requests
+    - Validates email exists
+    - Generates reset token
+    - Queues password reset email via Celery
+    """
     email = serializers.EmailField()
 
     def validate_email(self, value):
+        """Validate that user with email exists"""
         if not CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError("User with this email does not exist.")
         return value
+    
+    def save(self):
+        """
+        Generate reset token and queue email via Celery
+        Called after validation passes
+        """
+        from django.utils.http import urlsafe_base64_encode
+        from django.utils.encoding import force_bytes
+        from django.contrib.auth.tokens import default_token_generator
+        from accounts.email_utils import send_password_reset_email
+        
+        email = self.validated_data['email']
+        user = CustomUser.objects.get(email=email)
+        
+        # Generate reset token and UID
+        uid = urlsafe_base64_encode(force_bytes(user.pk))
+        reset_token = default_token_generator.make_token(user)
+        
+        # Queue password reset email via Celery (async, non-blocking)
+        send_password_reset_email(user, reset_token, uid)
+        
+        return user
 
 
 class PasswordResetConfirmSerializer(serializers.Serializer):
@@ -184,3 +213,20 @@ class GoogleCallbackSerializer(serializers.Serializer):
         if not value:
             raise serializers.ValidationError("Authorization code is required.")
         return value
+
+
+class EmailVerificationSerializer(serializers.Serializer):
+    """Serializer for email verification with code"""
+    email = serializers.EmailField()
+    code = serializers.CharField(max_length=6)
+
+
+class ResendVerificationEmailSerializer(serializers.Serializer):
+    """Serializer for resending verification email"""
+    email = serializers.EmailField()
+    
+    def validate_email(self, value):
+        if not CustomUser.objects.filter(email=value).exists():
+            raise serializers.ValidationError("User with this email does not exist.")
+        return value
+
