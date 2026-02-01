@@ -57,12 +57,12 @@ class ProductListView(generics.ListCreateAPIView):
     def get_queryset(self):
         queryset = Product.objects.filter(is_active=True)
 
-        # Filter by category if provided
+        # Filter by category
         category_id = self.request.query_params.get("category", None)
         if category_id:
             queryset = queryset.filter(categories__id=category_id)
 
-        # Filter by price range if provided
+        # Filter by price range
         min_price = self.request.query_params.get("min_price", None)
         max_price = self.request.query_params.get("max_price", None)
         if min_price:
