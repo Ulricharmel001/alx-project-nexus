@@ -62,7 +62,7 @@ Sarah clicks on the desk lamp to view its details. The product page is comprehen
 
 **Price:** $89.99
 
-**Description:** 
+**Description:**
 "This sleek desk lamp features adjustable brightness with touch controls, USB charging port, and energy-efficient LED technology. Perfect for home offices, study areas, and bedside tables."
 
 **Specifications:**
