@@ -1,7 +1,9 @@
 import uuid
+
+from django.conf import settings
 from django.db import models
 from django.utils import timezone
-from django.conf import settings
+
 from accounts.models import CustomUser
 
 # Create your models here.
@@ -13,10 +15,18 @@ class BaseModel(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     is_active = models.BooleanField(default=True, db_index=True)
     created_by = models.ForeignKey(
-        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="%(class)s_created"
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="%(class)s_created",
     )
     updated_by = models.ForeignKey(
-        CustomUser, on_delete=models.SET_NULL, null=True, blank=True, related_name="%(class)s_updated"
+        CustomUser,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="%(class)s_updated",
     )
 
     class Meta:
@@ -41,8 +51,10 @@ class Product(BaseModel):
     name = models.CharField(max_length=255, db_index=True)
     description = models.TextField()
     slug = models.SlugField(unique=True, db_index=True)
-    price = models.DecimalField(max_digits=10, decimal_places=2)  # Fixed: was max_length instead of max_digits
-    currency = models.CharField(max_length=15, default='CFA')
+    price = models.DecimalField(
+        max_digits=10, decimal_places=2
+    )  # Fixed: was max_length instead of max_digits
+    currency = models.CharField(max_length=15, default="CFA")
     is_active = models.BooleanField(default=True, db_index=True)
 
     def __str__(self):
@@ -51,7 +63,9 @@ class Product(BaseModel):
 
 # Address model needed for orders
 class Address(BaseModel):
-    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="addresses")
+    customer = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="addresses"
+    )
     street = models.CharField(max_length=255)
     city = models.CharField(max_length=100, db_index=True)
     state = models.CharField(max_length=100, db_index=True)
@@ -65,7 +79,9 @@ class Address(BaseModel):
 
 # inventory of stock
 class Inventory(BaseModel):
-    product = models.OneToOneField(Product, related_name='inventory', on_delete=models.CASCADE)
+    product = models.OneToOneField(
+        Product, related_name="inventory", on_delete=models.CASCADE
+    )
     quantity = models.PositiveIntegerField(default=0, db_index=True)
     reserved_quantity = models.PositiveIntegerField(default=0)
 
@@ -83,14 +99,18 @@ class Order(BaseModel):
         ("paid", "Paid"),
         ("shipped", "Shipped"),
         ("delivered", "Delivered"),  # Fixed typo: was "dilivered"
-        ("cancelled", "Cancelled")
+        ("cancelled", "Cancelled"),
     ]
     customer = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, related_name="orders"
     )
-    shipping_address = models.ForeignKey(Address, on_delete=models.PROTECT)  # Address model now defined
+    shipping_address = models.ForeignKey(
+        Address, on_delete=models.PROTECT
+    )  # Address model now defined
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default="pending")
-    total_price = models.DecimalField(max_digits=12, decimal_places=2)  # Fixed: was DateTimeField
+    total_price = models.DecimalField(
+        max_digits=12, decimal_places=2
+    )  # Fixed: was DateTimeField
     currency = models.CharField(max_length=5, default="CFA")
 
     def __str__(self):
@@ -101,8 +121,12 @@ class OrderItem(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
-    unit_price_at_purchase = models.DecimalField(max_digits=12, decimal_places=2)  # Fixed: was DateTimeField
-    subtotal = models.DecimalField(max_digits=12, decimal_places=2)  # Fixed: was DateTimeField
+    unit_price_at_purchase = models.DecimalField(
+        max_digits=12, decimal_places=2
+    )  # Fixed: was DateTimeField
+    subtotal = models.DecimalField(
+        max_digits=12, decimal_places=2
+    )  # Fixed: was DateTimeField
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in order {self.order.id}"
@@ -114,9 +138,11 @@ class Payment(BaseModel):
         ("pending", "Pending"),
         ("completed", "Completed"),
         ("failed", "Failed"),
-        ("refunded", "Refunded")
+        ("refunded", "Refunded"),
     ]
-    order = models.OneToOneField(Order, on_delete=models.CASCADE, related_name="payment")
+    order = models.OneToOneField(
+        Order, on_delete=models.CASCADE, related_name="payment"
+    )
     provider = models.CharField(max_length=200)
     amount = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=12, default="CFA")
@@ -134,17 +160,19 @@ class Payment(BaseModel):
 class Review(BaseModel):
     title = models.CharField(max_length=255, blank=True, null=True)
     content = models.TextField(blank=True, null=True)
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name="reviews")
-    customer = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name="reviews")
-    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])  # Rating from 1 to 5
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="reviews"
+    )
+    customer = models.ForeignKey(
+        CustomUser, on_delete=models.CASCADE, related_name="reviews"
+    )
+    rating = models.PositiveIntegerField(
+        choices=[(i, i) for i in range(1, 6)]
+    )  # Rating from 1 to 5
     comment = models.TextField(blank=True, null=True)
 
     class Meta:
-        unique_together = ('product', 'customer')  # One review per customer per product
+        unique_together = ("product", "customer")  # One review per customer per product
 
     def __str__(self):
         return f"Review for {self.product.name} by {self.customer}"
-
-
-
-    
