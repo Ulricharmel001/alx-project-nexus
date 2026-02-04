@@ -29,9 +29,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/v1/accounts/", include("accounts.urls")),
     path("api/v1/products/", include("products.urls")),
-    path("graphql/", GraphQLView.as_view(graphiql=True)),  
+    path("graphql/", GraphQLView.as_view(graphiql=True)),
     path("swagger/", schema_view.with_ui("swagger", cache_timeout=0)),
     path("redoc/", schema_view.with_ui("redoc", cache_timeout=0)),
-
-
 ]

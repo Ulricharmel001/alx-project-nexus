@@ -1,6 +1,7 @@
 import graphene
-from graphene_django import DjangoObjectType
 from django.contrib.auth import get_user_model
+from graphene_django import DjangoObjectType
+
 from .models import UserProfile
 
 CustomUser = get_user_model()
@@ -10,15 +11,22 @@ class CustomUserType(DjangoObjectType):
     class Meta:
         model = CustomUser
         fields = (
-            'id', 'email', 'first_name', 'last_name', 'role', 'date_joined',
-            'is_active', 'is_staff', 'username'
+            "id",
+            "email",
+            "first_name",
+            "last_name",
+            "role",
+            "date_joined",
+            "is_active",
+            "is_staff",
+            "username",
         )
 
 
 class UserProfileType(DjangoObjectType):
     class Meta:
         model = UserProfile
-        fields = ('id', 'user', 'bio', 'profile_picture', 'phone_number', 'address')
+        fields = ("id", "user", "bio", "profile_picture", "phone_number", "address")
 
 
 class Query(graphene.ObjectType):
@@ -49,18 +57,15 @@ class CreateUser(graphene.Mutation):
         first_name = graphene.String(required=True)
         last_name = graphene.String(required=True)
         password = graphene.String(required=True)
-        role = graphene.String(default_value='user')
+        role = graphene.String(default_value="user")
 
     def mutate(self, info, email, first_name, last_name, password, role):
         user = CustomUser(
-            email=email,
-            first_name=first_name,
-            last_name=last_name,
-            role=role
+            email=email, first_name=first_name, last_name=last_name, role=role
         )
         user.set_password(password)
         user.save()
-        
+
         return CreateUser(user=user, success=True, message="User created successfully")
 
 

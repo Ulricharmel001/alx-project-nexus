@@ -1,23 +1,32 @@
 import graphene
 from graphene_django import DjangoObjectType
-from .models import (
-    Category, Product, Address, Inventory, Order, OrderItem, Payment, Review
-)
+
 from accounts.models import CustomUser
+
+from .models import (Address, Category, Inventory, Order, OrderItem, Payment,
+                     Product, Review)
 
 
 class CategoryType(DjangoObjectType):
     class Meta:
         model = Category
-        fields = ('id', 'name', 'parent', 'created_at', 'updated_at', 'is_active')
+        fields = ("id", "name", "parent", "created_at", "updated_at", "is_active")
 
 
 class ProductType(DjangoObjectType):
     class Meta:
         model = Product
         fields = (
-            'id', 'categories', 'name', 'description', 'slug', 'price',
-            'currency', 'is_active', 'created_at', 'updated_at'
+            "id",
+            "categories",
+            "name",
+            "description",
+            "slug",
+            "price",
+            "currency",
+            "is_active",
+            "created_at",
+            "updated_at",
         )
 
 
@@ -25,8 +34,16 @@ class AddressType(DjangoObjectType):
     class Meta:
         model = Address
         fields = (
-            'id', 'customer', 'street', 'city', 'state', 'country',
-            'postal_code', 'is_default', 'created_at', 'updated_at'
+            "id",
+            "customer",
+            "street",
+            "city",
+            "state",
+            "country",
+            "postal_code",
+            "is_default",
+            "created_at",
+            "updated_at",
         )
 
 
@@ -34,7 +51,12 @@ class InventoryType(DjangoObjectType):
     class Meta:
         model = Inventory
         fields = (
-            'id', 'product', 'quantity', 'reserved_quantity', 'created_at', 'updated_at'
+            "id",
+            "product",
+            "quantity",
+            "reserved_quantity",
+            "created_at",
+            "updated_at",
         )
 
     def resolve_available_quantity(self, info):
@@ -45,8 +67,14 @@ class OrderType(DjangoObjectType):
     class Meta:
         model = Order
         fields = (
-            'id', 'customer', 'shipping_address', 'status', 'total_price',
-            'currency', 'created_at', 'updated_at'
+            "id",
+            "customer",
+            "shipping_address",
+            "status",
+            "total_price",
+            "currency",
+            "created_at",
+            "updated_at",
         )
 
 
@@ -54,8 +82,14 @@ class OrderItemType(DjangoObjectType):
     class Meta:
         model = OrderItem
         fields = (
-            'id', 'order', 'product', 'quantity', 'unit_price_at_purchase',
-            'subtotal', 'created_at', 'updated_at'
+            "id",
+            "order",
+            "product",
+            "quantity",
+            "unit_price_at_purchase",
+            "subtotal",
+            "created_at",
+            "updated_at",
         )
 
 
@@ -63,9 +97,18 @@ class PaymentType(DjangoObjectType):
     class Meta:
         model = Payment
         fields = (
-            'id', 'order', 'provider', 'amount', 'currency', 'status',
-            'transaction_reference', 'payment_date', 'payment_method', 'payment_details',
-            'created_at', 'updated_at'
+            "id",
+            "order",
+            "provider",
+            "amount",
+            "currency",
+            "status",
+            "transaction_reference",
+            "payment_date",
+            "payment_method",
+            "payment_details",
+            "created_at",
+            "updated_at",
         )
 
 
@@ -73,30 +116,37 @@ class ReviewType(DjangoObjectType):
     class Meta:
         model = Review
         fields = (
-            'id', 'title', 'content', 'product', 'customer', 'rating',
-            'comment', 'created_at', 'updated_at'
+            "id",
+            "title",
+            "content",
+            "product",
+            "customer",
+            "rating",
+            "comment",
+            "created_at",
+            "updated_at",
         )
 
 
 class Query(graphene.ObjectType):
     categories = graphene.List(CategoryType)
     category = graphene.Field(CategoryType, id=graphene.ID(required=True))
-    
+
     products = graphene.List(ProductType)
     product = graphene.Field(ProductType, id=graphene.ID(required=True))
-    
+
     addresses = graphene.List(AddressType)
     address = graphene.Field(AddressType, id=graphene.ID(required=True))
-    
+
     inventories = graphene.List(InventoryType)
     inventory = graphene.Field(InventoryType, id=graphene.ID(required=True))
-    
+
     orders = graphene.List(OrderType)
     order = graphene.Field(OrderType, id=graphene.ID(required=True))
-    
+
     payments = graphene.List(PaymentType)
     payment = graphene.Field(PaymentType, id=graphene.ID(required=True))
-    
+
     reviews = graphene.List(ReviewType)
     review = graphene.Field(ReviewType, id=graphene.ID(required=True))
 
@@ -161,14 +211,16 @@ class CreateProduct(graphene.Mutation):
             description=description,
             price=price,
             currency=currency,
-            slug=name.lower().replace(' ', '-')
+            slug=name.lower().replace(" ", "-"),
         )
-        
+
         if category_ids:
             categories = Category.objects.filter(id__in=category_ids)
             product.categories.set(categories)
-        
-        return CreateProduct(product=product, success=True, message="Product created successfully")
+
+        return CreateProduct(
+            product=product, success=True, message="Product created successfully"
+        )
 
 
 class CreateCategory(graphene.Mutation):
@@ -184,9 +236,11 @@ class CreateCategory(graphene.Mutation):
         parent = None
         if parent_id:
             parent = Category.objects.get(pk=parent_id)
-        
+
         category = Category.objects.create(name=name, parent=parent)
-        return CreateCategory(category=category, success=True, message="Category created successfully")
+        return CreateCategory(
+            category=category, success=True, message="Category created successfully"
+        )
 
 
 class Mutation(graphene.ObjectType):

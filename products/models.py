@@ -1,5 +1,4 @@
 import uuid
-
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
@@ -7,8 +6,6 @@ from django.utils import timezone
 from accounts.models import CustomUser
 
 # Create your models here.
-
-
 class BaseModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4)
     created_at = models.DateTimeField(auto_now_add=True, db_index=True)
@@ -53,7 +50,7 @@ class Product(BaseModel):
     slug = models.SlugField(unique=True, db_index=True)
     price = models.DecimalField(
         max_digits=10, decimal_places=2
-    )  # Fixed: was max_length instead of max_digits
+    )   
     currency = models.CharField(max_length=15, default="CFA")
     is_active = models.BooleanField(default=True, db_index=True)
 
@@ -95,10 +92,10 @@ class Inventory(BaseModel):
 # order and orderItem
 class Order(BaseModel):
     ORDER_STATUS = [
-        ("pending", "Pending"),  # Fixed typo: was "pendind"
+        ("pending", "Pending"),  
         ("paid", "Paid"),
         ("shipped", "Shipped"),
-        ("delivered", "Delivered"),  # Fixed typo: was "dilivered"
+        ("delivered", "Delivered"),  
         ("cancelled", "Cancelled"),
     ]
     customer = models.ForeignKey(
@@ -106,11 +103,11 @@ class Order(BaseModel):
     )
     shipping_address = models.ForeignKey(
         Address, on_delete=models.PROTECT
-    )  # Address model now defined
+    ) 
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default="pending")
     total_price = models.DecimalField(
         max_digits=12, decimal_places=2
-    )  # Fixed: was DateTimeField
+    ) 
     currency = models.CharField(max_length=5, default="CFA")
 
     def __str__(self):
@@ -123,16 +120,16 @@ class OrderItem(BaseModel):
     quantity = models.PositiveIntegerField()
     unit_price_at_purchase = models.DecimalField(
         max_digits=12, decimal_places=2
-    )  # Fixed: was DateTimeField
+    ) 
     subtotal = models.DecimalField(
         max_digits=12, decimal_places=2
-    )  # Fixed: was DateTimeField
+    ) 
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in order {self.order.id}"
 
 
-# Payment DB
+# Payment 
 class Payment(BaseModel):
     PAYMENT_STATUS = [
         ("pending", "Pending"),
@@ -154,6 +151,19 @@ class Payment(BaseModel):
 
     def __str__(self):
         return f"Payment for order {self.order.id} - {self.status}"
+
+
+
+class verifyPayment(BaseModel):
+    order = models.OneToOneField(
+        Order, on_delete=models.CASCADE, related_name="verify_payment"
+    )
+    is_verified = models.BooleanField(default=False)
+    verified_at = models.DateTimeField(blank=True, null=True)
+    verification_details = models.JSONField(blank=True, null=True)
+
+    def __str__(self):
+        return f"Verification for order {self.order.id} - Verified: {self.is_verified}"
 
 
 # Review database

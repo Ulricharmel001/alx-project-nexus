@@ -59,3 +59,35 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"Profile of {self.user.email}"
+
+
+class MaintenanceMode(models.Model):
+    """
+    Model to control maintenance mode status
+    """
+    is_enabled = models.BooleanField(default=False, help_text="Enable or disable maintenance mode")
+    message = models.TextField(
+        default="We are currently performing scheduled maintenance. We'll be back soon!",
+        help_text="Message to show to users during maintenance"
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Maintenance Mode"
+        verbose_name_plural = "Maintenance Mode"
+
+    def __str__(self):
+        return f"Maintenance Mode: {'ON' if self.is_enabled else 'OFF'}"
+
+    @classmethod
+    def is_maintenance_mode(cls):
+        """
+        Class method to check if maintenance mode is enabled
+        """
+        try:
+            maintenance_setting = cls.objects.first()
+            if maintenance_setting:
+                return maintenance_setting.is_enabled
+            return False
+        except:
+            return False
