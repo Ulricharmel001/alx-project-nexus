@@ -600,3 +600,25 @@ python manage.py test accounts
 - Redis (for caching and Celery broker)
 - Google Auth Library
 - DRF-YASG (for API documentation)
+
+## Maintenance Mode Middleware
+
+The accounts app includes a maintenance mode middleware that allows administrators to temporarily restrict access to the application during maintenance periods while still allowing admin users to access the system.
+
+### Features:
+- Blocks non-admin users during maintenance mode
+- Allows admin users to continue accessing the application during maintenance
+- Configurable maintenance message
+- Environment variable based configuration
+
+### Configuration:
+Add the following environment variables to enable maintenance mode:
+```
+MAINTENANCE_MODE=true
+MAINTENANCE_MESSAGE="Custom maintenance message here"
+```
+
+### How it works:
+1. When `MAINTENANCE_MODE` is set to `true`, the middleware intercepts requests
+2. Admin users (users with `is_staff` or `is_superuser` flag) are allowed access
+3. Regular users receive a maintenance message with HTTP 503 status code

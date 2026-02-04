@@ -86,9 +86,9 @@ def can_resend_code(email):
     time_since_resend = current_time - resend_at
     if time_since_resend < RESEND_COOLDOWN_TIME:
         wait_time = int(RESEND_COOLDOWN_TIME - time_since_resend)
-        return False, wait_time  # Cannot resend, return wait time
+        return False, wait_time  
 
-    return True, 0  # Can resend
+    return True, 0  
 
 
 def send_verification_email(email, code):
