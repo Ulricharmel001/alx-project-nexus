@@ -88,6 +88,13 @@ config.json
 
 scripts/
 
+# env files
+nexus-env.json
+nexus-env
+nexus-env.local
+nexus-env.development.local
+nexus-env.test.local
+nexus-env.production.local
 
 __pycache__/
 *.pyc
@@ -112,3 +119,32 @@ ecommerce_backup.sql
 # Ignore test coverage files
 htmlcov/
 .tox/
+
+/*__pycache__*/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+
+../venv/
+ENV/
+env.bak/
+venv.bak/
+ip_traacking/demo.py
+ip_traacking/demo.pyc
+ip_traacking/__pycache__/
+ip_tracking/demo.py
+
+data_seeder.py
+
+#Ignore migration files
+*/migrations/*.py
+*/migrations/*.pyc
+!*/migrations/__init__.py
+
+# Local test & experimental files
+accounts/tests.py
+products/tests.py
+test_receipt_task.py
+packages_backup.txt
