@@ -39,7 +39,7 @@ This code will expire in 5 minutes.
 If you didn't request this, please ignore this email.
 
 Best regards,
-ALX E-Commerce Team
+Ulrich E-Commerce Team
         """
         
         # Send email via SMTP (runs in background worker)
@@ -51,7 +51,7 @@ ALX E-Commerce Team
             fail_silently=False,
         )
         
-        logger.info(f"✓ Verification email sent to {email}")
+        logger.info(f"Verification email sent to {email}")
         return {
             "status": "success",
             "message": f"Verification email sent to {email}",
@@ -59,9 +59,8 @@ ALX E-Commerce Team
         }
         
     except Exception as exc:
-        logger.error(f"✗ Failed to send verification email to {email}: {str(exc)}")
-        
-        # Retry with exponential backoff
+        logger.error(f"Failed to send verification email to {email}: {str(exc)}")
+    
         raise self.retry(exc=exc)
 
 
@@ -102,10 +101,10 @@ This link will expire in 1 hour.
 If you didn't request this, please ignore this email and your password will remain unchanged.
 
 Best regards,
-ALX E-Commerce Team
+Ulrich E-Commerce Team
         """
         
-        # Send email via SMTP (runs in background worker)
+        
         send_mail(
             subject=subject,
             message=message,
@@ -123,8 +122,6 @@ ALX E-Commerce Team
         
     except Exception as exc:
         logger.error(f"✗ Failed to send password reset email to {user_email}: {str(exc)}")
-        
-        # Retry with exponential backoff
         raise self.retry(exc=exc)
 
 
@@ -141,16 +138,16 @@ def send_welcome_email_task(self, user_email, user_first_name):
         dict: Task result with status and message
     """
     try:
-        subject = "Welcome to ALX E-Commerce!"
+        subject = "Welcome to Your Best shop!"
         message = f"""
 Hello {user_first_name},
 
-Welcome to ALX E-Commerce! We're excited to have you on board.
+Welcome to our E-commerce shop ! We're excited to have you on board.
 
 Your account is now active and ready to use.
 
 Best regards,
-ALX E-Commerce Team
+Ulrich - alx-project nexus
         """
         
         send_mail(
