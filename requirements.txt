@@ -19,6 +19,7 @@ click-repl==0.3.0
 cron_descriptor==2.0.6
 decouple==0.0.7
 distlib==0.4.0
+dj-database-url==3.1.0
 Django==5.2.11
 django-celery-beat==2.8.1
 django-cors-headers==4.9.0
@@ -59,6 +60,8 @@ pre_commit==4.5.1
 promise==2.3
 prompt_toolkit==3.0.52
 propcache==0.4.1
+psycopg==3.3.2
+psycopg-binary==3.3.2
 psycopg2-binary==2.9.11
 PyJWT==2.10.1
 python-crontab==3.3.0
