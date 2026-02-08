@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Receipt for Your Purchase</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+        .header {
+            background-color: #f4f4f4;
+            padding: 10px;
+            text-align: center;
+        }
+        .content {
+            padding: 20px;
+        }
+        .receipt-details {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .order-items {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .order-items th, .order-items td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .order-items th {
+            background-color: #f2f2f2;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid #ddd;
+            text-align: center;
+            font-size: 0.9em;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Receipt for Your Purchase</h2>
+    </div>
+
+    <div class="content">
+        <p>Dear {{ customer.first_name }} {{ customer.last_name }},</p>
+
+        <p>Thank you for your purchase! Your order has been processed successfully.</p>
+
+        <div class="receipt-details">
+            <h3>Purchase Details</h3>
+            <p><strong>Transaction Reference:</strong> {{ purchase.transaction_reference }}</p>
+            <p><strong>Purchase Date:</strong> {{ purchase.purchase_date|date:"F d, Y H:i:s" }}</p>
+            <p><strong>Payment Provider:</strong> {{ purchase.provider }}</p>
+            <p><strong>Total Amount:</strong> {{ purchase.amount }} {{ purchase.currency }}</p>
+            <p><strong>Status:</strong> {{ purchase.status|title }}</p>
+        </div>
+
+        <p>We've attached a detailed PDF receipt for your records. If you have any questions about your order, please don't hesitate to contact our customer service team.</p>
+
+        <p>Thank you again for choosing Project Nexus E-Commerce Platform!</p>
+    </div>
+
+    <div class="footer">
+        <p>This email was sent to {{ customer.email }} because you placed an order with ALX E-Commerce Platform Project Nexus.</p>
+        <p>&copy; 2026 ALX Project Nexux E-Commerce Platform Project Nexus. All rights reserved.</p>
+    </div>
+</body>
+</html>

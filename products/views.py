@@ -1,24 +1,32 @@
+import logging
+import uuid
+from decimal import Decimal
+
+from django.db import models
+from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from drf_yasg import openapi
-from drf_yasg.utils import swagger_auto_schema
-from rest_framework import filters, generics, status
-from rest_framework.decorators import api_view, permission_classes
+from rest_framework import filters, generics, viewsets
+from rest_framework.decorators import action, api_view
 from rest_framework.permissions import (IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
-from .models import (Address, Category, Inventory, Order, OrderItem, Payment,
-                     Product, Review)
+from .chapa_service import ChapaService
+from .models import (Address, Category, Inventory, Order, Product, Purchase,
+                     PurchaseVerification, Review)
 from .serializers import (AddressSerializer, CategorySerializer,
-                          InventorySerializer, OrderItemSerializer,
-                          OrderSerializer, PaymentSerializer,
-                          ProductSerializer, ReviewSerializer)
+                          InventorySerializer, OrderSerializer,
+                          ProductSerializer, PurchaseSerializer,
+                          PurchaseVerificationSerializer, ReviewSerializer)
+from .tasks import generate_and_send_receipt_email
+
+logger = logging.getLogger(__name__)
+
+# --- Categories ---
 
 
 class CategoryListView(generics.ListCreateAPIView):
-    """List all categories or create a new category"""
-
-    queryset = Category.objects.filter(is_active=True)
+    queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [
@@ -32,17 +40,24 @@ class CategoryListView(generics.ListCreateAPIView):
 
 
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete a category"""
-
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
 
-class ProductListView(generics.ListCreateAPIView):
-    """List all products or create a new product"""
+@api_view(["GET"])
+def category_tree(request):
+    """Return category hierarchy"""
+    roots = Category.objects.filter(parent=None)
+    serializer = CategorySerializer(roots, many=True, context={"request": request})
+    return Response(serializer.data)
 
-    queryset = Product.objects.filter(is_active=True)
+
+# --- Products ---
+
+
+class ProductListView(generics.ListCreateAPIView):
+    queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [
@@ -50,181 +65,210 @@ class ProductListView(generics.ListCreateAPIView):
         filters.OrderingFilter,
         DjangoFilterBackend,
     ]
-    search_fields = ["name", "description"]
+    search_fields = ["name", "description", "categories__name"]
     ordering_fields = ["created_at", "name", "price"]
     ordering = ["-created_at"]
 
-    def get_queryset(self):
-        queryset = Product.objects.filter(is_active=True)
-
-        # Filter by category
-        category_id = self.request.query_params.get("category", None)
-        if category_id:
-            queryset = queryset.filter(categories__id=category_id)
-
-        # Filter by price range
-        min_price = self.request.query_params.get("min_price", None)
-        max_price = self.request.query_params.get("max_price", None)
-        if min_price:
-            queryset = queryset.filter(price__gte=min_price)
-        if max_price:
-            queryset = queryset.filter(price__lte=max_price)
-
-        return queryset
-
 
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete a product"""
-
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticatedOrReadOnly])
 def product_search(request):
-    """Search products by name or description"""
-    query = request.GET.get("q", "")
-    if query:
-        products = Product.objects.filter(is_active=True).filter(
-            name__icontains=query
-        ) | Product.objects.filter(is_active=True).filter(description__icontains=query)
-        serializer = ProductSerializer(products, many=True)
-        return Response(serializer.data)
-    else:
-        return Response([], status=status.HTTP_400_BAD_REQUEST)
-
-
-@api_view(["GET"])
-@permission_classes([IsAuthenticatedOrReadOnly])
-def category_tree(request):
-    """Get category tree structure"""
-    root_categories = Category.objects.filter(parent=None, is_active=True)
-    serializer = CategorySerializer(root_categories, many=True)
+    query = request.GET.get("q")
+    products = (
+        Product.objects.filter(
+            models.Q(name__icontains=query) | models.Q(description__icontains=query)
+        )
+        if query
+        else Product.objects.none()
+    )
+    serializer = ProductSerializer(products, many=True)
     return Response(serializer.data)
 
 
-class AddressListView(generics.ListCreateAPIView):
-    """List all addresses or create a new address"""
+# --- Addresses ---
 
-    queryset = Address.objects.all()
+
+class AddressListView(generics.ListCreateAPIView):
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [filters.SearchFilter, filters.OrderingFilter]
-    search_fields = ["city", "state", "country"]
-    ordering_fields = ["created_at", "city"]
-    ordering = ["-created_at"]
 
     def get_queryset(self):
-        user = self.request.user
-        return Address.objects.filter(customer=user)
+        return Address.objects.filter(customer=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(customer=self.request.user)
 
 
 class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete an address"""
-
-    queryset = Address.objects.all()
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
+        return Address.objects.filter(customer=self.request.user)
+
+
+# --- Orders ---
+
+
+class OrderListView(generics.ListCreateAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
         user = self.request.user
-        return Address.objects.filter(customer=user)
+        return (
+            Order.objects.all()
+            if user.is_staff
+            else Order.objects.filter(customer=user)
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(customer=self.request.user)
+
+
+class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return (
+            Order.objects.all()
+            if user.is_staff
+            else Order.objects.filter(customer=user)
+        )
+
+
+# --- Purchases & Payments ---
+
+
+class PurchaseViewSet(viewsets.ModelViewSet):
+    serializer_class = PurchaseSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        return (
+            Purchase.objects.all()
+            if user.is_staff
+            else Purchase.objects.filter(created_by=user)
+        )
+
+    def create(self, request):
+        data = request.data
+        required_fields = ("order_id", "first_name", "last_name", "email")
+
+        if not all(data.get(f) for f in required_fields):
+            return Response({"error": "Missing required fields"}, status=400)
+
+        order = get_object_or_404(Order, id=data["order_id"], customer=request.user)
+
+        if order.status == "paid":
+            return Response({"error": "Order already paid"}, status=400)
+
+        tx_ref = f"TX-{uuid.uuid4().hex[:12].upper()}"
+        chapa = ChapaService()
+        response = chapa.initiate_payment(
+            first_name=data["first_name"],
+            last_name=data["last_name"],
+            email=data["email"],
+            amount=Decimal(order.total_price),
+            tx_ref=tx_ref,
+        )
+
+        if response.get("status") != "success":
+            return Response({"error": "Payment initiation failed"}, status=400)
+
+        purchase = Purchase.objects.create(
+            order=order,
+            provider="chapa",
+            amount=order.total_price,
+            currency="ETB",
+            status="pending",
+            transaction_reference=tx_ref,
+            created_by=request.user,
+        )
+
+        return Response(
+            {
+                "checkout_url": response["data"]["checkout_url"],
+                "tx_ref": tx_ref,
+                "purchase_id": purchase.id,
+            }
+        )
+
+    @action(detail=False, methods=["get"], url_path="verify/(?P<tx_ref>[^/.]+)")
+    def verify_payment(self, request, tx_ref):
+        purchase = get_object_or_404(
+            Purchase, transaction_reference=tx_ref, created_by=request.user
+        )
+
+        chapa = ChapaService()
+        response = chapa.verify_payment(tx_ref)
+
+        if response.get("status") != "success":
+            purchase.status = "failed"
+            purchase.save()
+            return Response({"error": "Verification failed"}, status=400)
+
+        status_map = {"success": "completed", "failed": "failed", "pending": "pending"}
+        chapa_status = response["data"].get("status", "").lower()
+        purchase.status = status_map.get(chapa_status, "pending")
+        purchase.payment_details = response["data"]
+        purchase.save()
+
+        if purchase.status == "completed":
+            purchase.order.status = "paid"
+            purchase.order.save()
+            PurchaseVerification.objects.get_or_create(
+                purchase=purchase,
+                defaults={
+                    "is_verified": True,
+                    "verification_details": response["data"],
+                    "created_by": request.user,
+                },
+            )
+            generate_and_send_receipt_email.delay(str(purchase.id))
+
+        return Response({"status": purchase.status})
+
+
+# --- Reviews ---
+
+
+class ReviewListView(generics.ListCreateAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        serializer.save(customer=self.request.user)
+
+
+class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Review.objects.all()
+    serializer_class = ReviewSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+# --- Inventory ---
 
 
 class InventoryListView(generics.ListCreateAPIView):
-    """List all inventories or create a new inventory"""
-
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
     permission_classes = [IsAuthenticated]
-    filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
-    ordering_fields = ["quantity", "created_at"]
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    ordering_fields = ["created_at", "quantity"]
     ordering = ["-created_at"]
 
 
 class InventoryDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete an inventory"""
-
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
     permission_classes = [IsAuthenticated]
-
-
-class OrderListView(generics.ListCreateAPIView):
-    """List all orders or create a new order"""
-
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
-    ordering_fields = ["created_at", "total_price", "status"]
-    ordering = ["-created_at"]
-
-    def get_queryset(self):
-        user = self.request.user
-        return Order.objects.filter(customer=user)
-
-
-class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete an order"""
-
-    queryset = Order.objects.all()
-    serializer_class = OrderSerializer
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        user = self.request.user
-        return Order.objects.filter(customer=user)
-
-
-class PaymentListView(generics.ListCreateAPIView):
-    """List all payments or create a new payment"""
-
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
-    filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
-    ordering_fields = ["created_at", "amount", "status"]
-    ordering = ["-created_at"]
-
-
-class PaymentDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete a payment"""
-
-    queryset = Payment.objects.all()
-    serializer_class = PaymentSerializer
-    permission_classes = [IsAuthenticated]
-
-
-class ReviewListView(generics.ListCreateAPIView):
-    """List all reviews or create a new review"""
-
-    queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]
-    filter_backends = [filters.OrderingFilter, DjangoFilterBackend]
-    ordering_fields = ["created_at", "rating"]
-    ordering = ["-created_at"]
-
-    def get_queryset(self):
-        queryset = Review.objects.all()
-
-        product_id = self.request.query_params.get("product", None)
-        if product_id:
-            queryset = queryset.filter(product_id=product_id)
-
-        customer_id = self.request.query_params.get("customer", None)
-        if customer_id:
-            queryset = queryset.filter(customer_id=customer_id)
-
-        return queryset
-
-
-class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """Retrieve, update or delete a review"""
-
-    queryset = Review.objects.all()
-    serializer_class = ReviewSerializer
-    permission_classes = [IsAuthenticatedOrReadOnly]

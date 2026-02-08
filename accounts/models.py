@@ -65,10 +65,13 @@ class MaintenanceMode(models.Model):
     """
     Model to control maintenance mode status
     """
-    is_enabled = models.BooleanField(default=False, help_text="Enable or disable maintenance mode")
+
+    is_enabled = models.BooleanField(
+        default=False, help_text="Enable or disable maintenance mode"
+    )
     message = models.TextField(
         default="We are currently performing scheduled maintenance. We'll be back soon!",
-        help_text="Message to show to users during maintenance"
+        help_text="Message to show to users during maintenance",
     )
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -200,5 +200,3 @@ This document explains how different users interact with the e-commerce platform
 | Process Orders | Admin | Orders fulfilled |
 | Send Confirmation | System | Customer notified |
 | Update Inventory | System | Stock levels adjusted |
-
-This simplified guide shows the main ways people use the e-commerce platform in clear, easy-to-understand terms.

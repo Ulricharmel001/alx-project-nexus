@@ -1,5 +1,6 @@
-from django.http import HttpResponse
 from django.contrib.auth import get_user_model
+from django.http import HttpResponse
+
 from accounts.models import MaintenanceMode
 
 User = get_user_model()
@@ -14,7 +15,7 @@ class MaintenanceModeMiddleware:
 
     def __init__(self, get_response):
         self.get_response = get_response
-      
+
     def __call__(self, request):
         maintenance_mode = MaintenanceMode.is_maintenance_mode()
         if not maintenance_mode:
@@ -26,15 +27,15 @@ class MaintenanceModeMiddleware:
 
         # Check if user is authenticated admin (staff or superuser)
         user_is_admin = (
-            hasattr(request, 'user') and
-            request.user.is_authenticated and
-            (request.user.is_staff or request.user.is_superuser)
+            hasattr(request, "user")
+            and request.user.is_authenticated
+            and (request.user.is_staff or request.user.is_superuser)
         )
 
         # If user is admin, allow access and return normal response
         if user_is_admin:
             return response
-        
+
         try:
             maintenance_obj = MaintenanceMode.objects.first()
             if maintenance_obj:
@@ -42,10 +43,12 @@ class MaintenanceModeMiddleware:
             else:
                 maintenance_message = "We are currently performing scheduled maintenance. We'll be back soon!"
         except:
-            maintenance_message = "We are currently performing scheduled maintenance. We'll be back soon!"
+            maintenance_message = (
+                "We are currently performing scheduled maintenance. We'll be back soon!"
+            )
 
         return HttpResponse(
             maintenance_message,
             status=503,  # HTTP 503: Service Unavailable
-            content_type='text/html'
+            content_type="text/html",
         )
