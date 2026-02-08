@@ -1,10 +1,9 @@
 import os
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
 
-from dotenv import load_dotenv
 import dj_database_url
-
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
@@ -16,9 +15,7 @@ ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
 
 AUTH_USER_MODEL = "accounts.CustomUser"
 
-EMAIL_VERIFICATION_SECRET_KEY = os.getenv(
-    "EMAIL_VERIFICATION_SECRET_KEY", SECRET_KEY
-)
+EMAIL_VERIFICATION_SECRET_KEY = os.getenv("EMAIL_VERIFICATION_SECRET_KEY", SECRET_KEY)
 EMAIL_VERIFICATION_TIMEOUT = int(os.getenv("EMAIL_VERIFICATION_TIMEOUT", 3600))
 EMAIL_VERIFICATION_SENDER = os.getenv(
     "EMAIL_VERIFICATION_SENDER", "noreply@ecommerce.com"
@@ -37,23 +34,19 @@ GOOGLE_OAUTH2_SCOPE = (
 
 INSTALLED_APPS = [
     "corsheaders",
-
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
     "accounts.apps.AccountsConfig",
     "products.apps.ProductsConfig",
     "ip_tracking.apps.IpTrackingConfig",
-
     "rest_framework",
     "rest_framework.authtoken",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
-
     "drf_yasg",
     "django_ratelimit",
     "graphene_django",
@@ -124,7 +117,9 @@ if os.getenv("POSTGRES_SSL", "False").lower() == "true":
     DATABASES["default"]["OPTIONS"] = {"sslmode": "require"}
 
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -156,9 +151,7 @@ SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", EMAIL_HOST_USER)
 
 FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
-REDIS_CACHE_URL = os.getenv(
-    "REDIS_CACHE_URL", "redis://127.0.0.1:6379/1"
-)
+REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://127.0.0.1:6379/1")
 
 CACHES = {
     "default": {
@@ -206,12 +199,8 @@ GRAPHENE = {
     "ATOMIC_MUTATIONS": True,
 }
 
-CELERY_BROKER_URL = os.getenv(
-    "CELERY_BROKER_URL", "redis://127.0.0.1:6379/0"
-)
-CELERY_RESULT_BACKEND = os.getenv(
-    "CELERY_RESULT_BACKEND", CELERY_BROKER_URL
-)
+CELERY_BROKER_URL = os.getenv("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0")
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL)
 
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"

@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import CustomUser, UserProfile, MaintenanceMode
+from .models import CustomUser, MaintenanceMode, UserProfile
 
 
 # Register your models here.
@@ -26,16 +26,9 @@ class MaintenanceModeAdmin(admin.ModelAdmin):
     list_editable = ("is_enabled",)
     readonly_fields = ("updated_at",)
     fieldsets = (
-        (None, {
-            'fields': ('is_enabled',)
-        }),
-        ('Message', {
-            'fields': ('message',)
-        }),
-        ('Timestamps', {
-            'fields': ('updated_at',),
-            'classes': ('collapse',)
-        }),
+        (None, {"fields": ("is_enabled",)}),
+        ("Message", {"fields": ("message",)}),
+        ("Timestamps", {"fields": ("updated_at",), "classes": ("collapse",)}),
     )
 
     def has_add_permission(self, request):
