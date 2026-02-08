@@ -3,22 +3,17 @@ FROM python:3.12-slim
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y \
-        gcc \
-        build-essential \
-        libpq-dev \
-        default-libmysqlclient-dev \
-        pkg-config \
-        && rm -rf /var/lib/apt/lists/*
+    apt-get install -y gcc libpq-dev build-essential && \
+    rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy app source
 COPY . .
 
-# Expose port
+# Ensure entrypoint is executable
+RUN chmod +x /app/entrypoint.sh
+
 EXPOSE 8000
 
-# Entrypoint
-CMD ["bash", "entrypoint.sh"]
+CMD ["bash", "/app/entrypoint.sh"]
