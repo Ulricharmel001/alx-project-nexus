@@ -6,6 +6,8 @@ from drf_yasg.views import get_schema_view
 from graphene_django.views import GraphQLView
 from rest_framework import permissions
 
+from . import views
+
 # Swagger API Documentation Schema
 
 schema_view = get_schema_view(
@@ -26,6 +28,8 @@ schema_view = get_schema_view(
 )
 
 urlpatterns = [
+    path("", views.home, name="home"),
+    path("health/", views.health_check, name="health_check"),
     path("admin/", admin.site.urls),
     path("api/v1/accounts/", include("accounts.urls")),
     path("api/v1/products/", include("products.urls")),
