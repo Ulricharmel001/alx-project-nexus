@@ -1,7 +1,8 @@
 from django.contrib import admin
 
-from .models import (Address, Category, Inventory, Order, OrderItem, Payment,
-                     Product, Review)
+from .models import (Address, Cart, CartItem, Category, Inventory, Order,
+                     OrderItem, Product, Purchase, PurchaseVerification,
+                     Review)
 
 
 @admin.register(Category)
@@ -10,7 +11,7 @@ class CategoryAdmin(admin.ModelAdmin):
     list_filter = ("is_active", "parent", "created_at", "updated_at")
     search_fields = ("name",)
     list_editable = ("is_active",)
-    prepopulated_fields = {"name": ("name",)}
+    # Removed prepopulated_fields because Category has no slug
 
 
 @admin.register(Product)
@@ -106,15 +107,15 @@ class OrderItemAdmin(admin.ModelAdmin):
     search_fields = ("order__id", "product__name")
 
 
-@admin.register(Payment)
-class PaymentAdmin(admin.ModelAdmin):
+@admin.register(Purchase)
+class PurchaseAdmin(admin.ModelAdmin):
     list_display = (
         "order",
         "provider",
         "amount",
         "currency",
         "status",
-        "payment_date",
+        "purchase_date",
         "created_at",
         "updated_at",
     )
@@ -122,12 +123,26 @@ class PaymentAdmin(admin.ModelAdmin):
         "status",
         "provider",
         "currency",
-        "payment_date",
+        "purchase_date",
         "created_at",
         "updated_at",
     )
     search_fields = ("order__id", "transaction_reference", "provider")
     list_editable = ("status",)
+
+
+@admin.register(PurchaseVerification)
+class PurchaseVerificationAdmin(admin.ModelAdmin):
+    list_display = (
+        "purchase",
+        "is_verified",
+        "verified_at",
+        "created_at",
+        "updated_at",
+    )
+    list_filter = ("is_verified", "verified_at", "created_at", "updated_at")
+    search_fields = ("purchase__order__id", "purchase__transaction_reference")
+    list_editable = ("is_verified",)
 
 
 @admin.register(Review)
@@ -143,3 +158,24 @@ class ReviewAdmin(admin.ModelAdmin):
     list_filter = ("rating", "created_at", "updated_at", "product", "customer")
     search_fields = ("product__name", "customer__email", "title", "content")
     list_editable = ("rating",)
+
+
+@admin.register(Cart)
+class CartAdmin(admin.ModelAdmin):
+    list_display = ("customer", "total_price", "created_at", "updated_at")
+    list_filter = ("created_at", "updated_at", "customer")
+    search_fields = ("customer__email",)
+
+
+@admin.register(CartItem)
+class CartItemAdmin(admin.ModelAdmin):
+    list_display = (
+        "cart",
+        "product",
+        "quantity",
+        "subtotal",
+        "created_at",
+        "updated_at",
+    )
+    list_filter = ("created_at", "updated_at", "cart", "product")
+    search_fields = ("cart__customer__email", "product__name")

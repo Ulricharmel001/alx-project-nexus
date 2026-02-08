@@ -1,3 +1,8 @@
+"""
+Clean Google OAuth handler for authentication and token verification
+"""
+import logging
+
 import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
@@ -6,6 +11,7 @@ from google.oauth2 import id_token
 from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
+logger = logging.getLogger(__name__)
 
 
 class GoogleAuthHandler:
@@ -27,7 +33,7 @@ class GoogleAuthHandler:
                 token, google_requests.Request(), settings.GOOGLE_OAUTH2_CLIENT_ID
             )
 
-            # Token is valid
+            # Validate issuer
             if idinfo["iss"] not in [
                 "accounts.google.com",
                 "https://accounts.google.com",
@@ -36,8 +42,11 @@ class GoogleAuthHandler:
 
             return idinfo
 
+        except ValueError as ve:
+            logger.error(f"Google token validation error: {str(ve)}")
+            return None
         except Exception as e:
-            print(f"Token verification failed: {str(e)}")
+            logger.error(f"Token verification failed: {str(e)}")
             return None
 
     @staticmethod
@@ -54,6 +63,9 @@ class GoogleAuthHandler:
         email = google_user_data.get("email")
         first_name = google_user_data.get("given_name", "")
         last_name = google_user_data.get("family_name", "")
+
+        if not email:
+            raise ValueError("Email is required to create or get user")
 
         user, created = User.objects.get_or_create(
             email=email,
@@ -98,11 +110,21 @@ class GoogleAuthHandler:
                 "grant_type": "authorization_code",
             }
 
-            response = requests.post(token_endpoint, data=payload)
+            response = requests.post(
+                token_endpoint,
+                data=payload,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+            )
             response.raise_for_status()
 
             return response.json()
 
+        except requests.exceptions.HTTPError as e:
+            logger.error(f"HTTP error during code exchange: {str(e)}")
+            return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Request error during code exchange: {str(e)}")
+            return None
         except Exception as e:
-            print(f"Code exchange failed: {str(e)}")
+            logger.error(f"Code exchange failed: {str(e)}")
             return None

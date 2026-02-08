@@ -1,8 +1,19 @@
+version: "3.9"
+
 services:
+  web:
+    build: .
+    container_name: e_commerce_api
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+
   postgres:
     image: postgres:15
     container_name: postgres_db
-    restart: always
     env_file:
       - .env
     environment:
@@ -17,7 +28,6 @@ services:
   adminer:
     image: adminer:latest
     container_name: adminer
-    restart: always
     ports:
       - "8080:8080"
     depends_on:

@@ -1,9 +1,11 @@
 import uuid
+
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
 from accounts.models import CustomUser
+
 
 # Create your models here.
 class BaseModel(models.Model):
@@ -48,9 +50,7 @@ class Product(BaseModel):
     name = models.CharField(max_length=255, db_index=True)
     description = models.TextField()
     slug = models.SlugField(unique=True, db_index=True)
-    price = models.DecimalField(
-        max_digits=10, decimal_places=2
-    )   
+    price = models.DecimalField(max_digits=10, decimal_places=2)
     currency = models.CharField(max_length=15, default="CFA")
     is_active = models.BooleanField(default=True, db_index=True)
 
@@ -92,22 +92,18 @@ class Inventory(BaseModel):
 # order and orderItem
 class Order(BaseModel):
     ORDER_STATUS = [
-        ("pending", "Pending"),  
+        ("pending", "Pending"),
         ("paid", "Paid"),
         ("shipped", "Shipped"),
-        ("delivered", "Delivered"),  
+        ("delivered", "Delivered"),
         ("cancelled", "Cancelled"),
     ]
     customer = models.ForeignKey(
         CustomUser, on_delete=models.CASCADE, related_name="orders"
     )
-    shipping_address = models.ForeignKey(
-        Address, on_delete=models.PROTECT
-    ) 
+    shipping_address = models.ForeignKey(Address, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default="pending")
-    total_price = models.DecimalField(
-        max_digits=12, decimal_places=2
-    ) 
+    total_price = models.DecimalField(max_digits=12, decimal_places=2)
     currency = models.CharField(max_length=5, default="CFA")
 
     def __str__(self):
@@ -118,52 +114,78 @@ class OrderItem(BaseModel):
     order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name="items")
     product = models.ForeignKey(Product, on_delete=models.PROTECT)
     quantity = models.PositiveIntegerField()
-    unit_price_at_purchase = models.DecimalField(
-        max_digits=12, decimal_places=2
-    ) 
-    subtotal = models.DecimalField(
-        max_digits=12, decimal_places=2
-    ) 
+    unit_price_at_purchase = models.DecimalField(max_digits=12, decimal_places=2)
+    subtotal = models.DecimalField(max_digits=12, decimal_places=2)
 
     def __str__(self):
         return f"{self.quantity} x {self.product.name} in order {self.order.id}"
 
 
-# Payment 
-class Payment(BaseModel):
-    PAYMENT_STATUS = [
+# Purchase
+class Purchase(BaseModel):
+    PURCHASE_STATUS = [
         ("pending", "Pending"),
         ("completed", "Completed"),
         ("failed", "Failed"),
         ("refunded", "Refunded"),
+        ("verified", "Verified"),
     ]
     order = models.OneToOneField(
-        Order, on_delete=models.CASCADE, related_name="payment"
+        Order, on_delete=models.CASCADE, related_name="purchase"
     )
-    provider = models.CharField(max_length=200)
+    provider = models.CharField(max_length=200, default="chapa")
     amount = models.DecimalField(max_digits=12, decimal_places=2)
-    currency = models.CharField(max_length=12, default="CFA")
-    status = models.CharField(max_length=200, choices=PAYMENT_STATUS, default="pending")
+    currency = models.CharField(max_length=5, default="ETB")
+    status = models.CharField(max_length=20, choices=PURCHASE_STATUS, default="pending")
     transaction_reference = models.CharField(max_length=200, blank=True, null=True)
-    payment_date = models.DateTimeField(default=timezone.now)
+    purchase_date = models.DateTimeField(default=timezone.now)
     payment_method = models.CharField(max_length=200, blank=True, null=True)
     payment_details = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Payment for order {self.order.id} - {self.status}"
+        return f"Purchase for order {self.order.id} - {self.status}"
 
 
-
-class verifyPayment(BaseModel):
-    order = models.OneToOneField(
-        Order, on_delete=models.CASCADE, related_name="verify_payment"
+class PurchaseVerification(BaseModel):
+    purchase = models.OneToOneField(
+        Purchase, on_delete=models.CASCADE, related_name="verification"
     )
     is_verified = models.BooleanField(default=False)
     verified_at = models.DateTimeField(blank=True, null=True)
     verification_details = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Verification for order {self.order.id} - Verified: {self.is_verified}"
+        return f"Verification for purchase {self.purchase.id} - Verified: {self.is_verified}"
+
+
+# Cart model
+class Cart(BaseModel):
+    customer = models.OneToOneField(
+        CustomUser, on_delete=models.CASCADE, related_name="cart"
+    )
+
+    def __str__(self):
+        return f"Cart for {self.customer.username}"
+
+    @property
+    def total_price(self):
+        return sum(item.subtotal for item in self.items.all())
+
+
+class CartItem(BaseModel):
+    cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name="items")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    quantity = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        unique_together = ("cart", "product")
+
+    def __str__(self):
+        return f"{self.quantity} x {self.product.name} in cart"
+
+    @property
+    def subtotal(self):
+        return self.quantity * self.product.price
 
 
 # Review database

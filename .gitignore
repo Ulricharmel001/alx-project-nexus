@@ -82,7 +82,7 @@ db.sqlite3
 
 
 # Ignore Python specific files (setting.py, etc.)
-settings.py
+
 config.py
 config.json
 
@@ -148,3 +148,11 @@ accounts/tests.py
 products/tests.py
 test_receipt_task.py
 packages_backup.txt
+#test files
+test_email.py
+test_celery.py
+test_data_seeder.py
+tests.py
+test_*.py
+test_receipt_task.py
+secret

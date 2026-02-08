@@ -1,7 +1,9 @@
-from django.test import TestCase, RequestFactory
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
-from accounts.middleware.maintenance_middleware import MaintenanceModeMiddleware
+from django.test import RequestFactory, TestCase
+
+from accounts.middleware.maintenance_middleware import \
+    MaintenanceModeMiddleware
 from accounts.models import MaintenanceMode
 
 User = get_user_model()
@@ -17,23 +19,23 @@ class MaintenanceModeMiddlewareTest(TestCase):
 
         # Create a regular user
         self.user = User.objects.create_user(
-            email='test@example.com',
-            password='testpass',
-            first_name='Test',
-            last_name='User'
+            email="test@example.com",
+            password="testpass",
+            first_name="Test",
+            last_name="User",
         )
 
         # Create an admin user
         self.admin_user = User.objects.create_user(
-            email='admin@example.com',
-            password='adminpass',
-            first_name='Admin',
-            last_name='User',
-            is_staff=True
+            email="admin@example.com",
+            password="adminpass",
+            first_name="Admin",
+            last_name="User",
+            is_staff=True,
         )
 
         def dummy_get_response(request):
-            return HttpResponse("Normal Response")
+            return HttpResponse("Normal Response")  # pragma: allowlist secret
 
         self.get_response = dummy_get_response
 
@@ -43,8 +45,8 @@ class MaintenanceModeMiddlewareTest(TestCase):
         MaintenanceMode.objects.create(is_enabled=True)
 
         middleware = MaintenanceModeMiddleware(self.get_response)
-        request = self.factory.get('/')
-        request.user = self.user  # Regular user
+        request = self.factory.get("/")
+        request.user = self.user
 
         response = middleware(request)
 
@@ -57,7 +59,7 @@ class MaintenanceModeMiddlewareTest(TestCase):
         MaintenanceMode.objects.create(is_enabled=True)
 
         middleware = MaintenanceModeMiddleware(self.get_response)
-        request = self.factory.get('/')
+        request = self.factory.get("/")
         request.user = self.admin_user  # Admin user
 
         response = middleware(request)
@@ -67,11 +69,10 @@ class MaintenanceModeMiddlewareTest(TestCase):
 
     def test_normal_operation_when_maintenance_disabled(self):
         """Test that all users get normal response when maintenance is disabled"""
-        # Disable maintenance mode (or don't create it - defaults to disabled)
-        # MaintenanceMode.objects.create(is_enabled=False)  # Not needed since default is False
+        # Ensure maintenance mode is disabled
 
         middleware = MaintenanceModeMiddleware(self.get_response)
-        request = self.factory.get('/')
+        request = self.factory.get("/")
         request.user = self.user  # Regular user
 
         response = middleware(request)
