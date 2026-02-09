@@ -74,7 +74,7 @@ MIDDLEWARE = [
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
-    "ip_tracking.middleware.IPTrackingMiddleware",
+    # "ip_tracking.middleware.IPTrackingMiddleware",  # Temporarily disabled due to 500 errors
     "accounts.middleware.maintenance_middleware.MaintenanceModeMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
