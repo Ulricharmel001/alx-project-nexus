@@ -5,6 +5,8 @@ from decimal import Decimal
 from django.db import models
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, generics, viewsets
 from rest_framework.decorators import action, api_view
 from rest_framework.permissions import (IsAuthenticated,
@@ -25,6 +27,11 @@ logger = logging.getLogger(__name__)
 # --- Categories ---
 
 
+@swagger_auto_schema(
+    operation_summary="List all categories",
+    operation_description="Retrieve a list of all product categories. Supports filtering, searching, and ordering.",
+    responses={200: CategorySerializer(many=True)}
+)
 class CategoryListView(generics.ListCreateAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
@@ -39,12 +46,26 @@ class CategoryListView(generics.ListCreateAPIView):
     ordering = ["-created_at"]
 
 
+@swagger_auto_schema(
+    operation_summary="Get, update or delete a category",
+    operation_description="Retrieve, update or delete a specific product category by its UUID.",
+    responses={
+        200: CategorySerializer,
+        404: "Category not found"
+    }
+)
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
 
+@swagger_auto_schema(
+    method='get',
+    operation_summary="Get category hierarchy",
+    operation_description="Retrieve the hierarchical structure of all categories.",
+    responses={200: CategorySerializer(many=True)}
+)
 @api_view(["GET"])
 def category_tree(request):
     """Return category hierarchy"""
@@ -56,6 +77,11 @@ def category_tree(request):
 # --- Products ---
 
 
+@swagger_auto_schema(
+    operation_summary="List all products",
+    operation_description="Retrieve a list of all products. Supports filtering, searching, and ordering.",
+    responses={200: ProductSerializer(many=True)}
+)
 class ProductListView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
@@ -70,12 +96,35 @@ class ProductListView(generics.ListCreateAPIView):
     ordering = ["-created_at"]
 
 
+@swagger_auto_schema(
+    operation_summary="Get, update or delete a product",
+    operation_description="Retrieve, update or delete a specific product by its UUID.",
+    responses={
+        200: ProductSerializer,
+        404: "Product not found"
+    }
+)
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
 
+@swagger_auto_schema(
+    method='get',
+    operation_summary="Search products",
+    operation_description="Search for products by name or description.",
+    manual_parameters=[
+        openapi.Parameter(
+            'q',
+            openapi.IN_QUERY,
+            description="Search query string",
+            type=openapi.TYPE_STRING,
+            required=True
+        )
+    ],
+    responses={200: ProductSerializer(many=True)}
+)
 @api_view(["GET"])
 def product_search(request):
     query = request.GET.get("q")
@@ -93,6 +142,11 @@ def product_search(request):
 # --- Addresses ---
 
 
+@swagger_auto_schema(
+    operation_summary="List user addresses",
+    operation_description="Retrieve a list of addresses for the authenticated user.",
+    responses={200: AddressSerializer(many=True)}
+)
 class AddressListView(generics.ListCreateAPIView):
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
@@ -104,6 +158,14 @@ class AddressListView(generics.ListCreateAPIView):
         serializer.save(customer=self.request.user)
 
 
+@swagger_auto_schema(
+    operation_summary="Get, update or delete an address",
+    operation_description="Retrieve, update or delete a specific address for the authenticated user.",
+    responses={
+        200: AddressSerializer,
+        404: "Address not found"
+    }
+)
 class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = AddressSerializer
     permission_classes = [IsAuthenticated]
@@ -115,6 +177,11 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
 # --- Orders ---
 
 
+@swagger_auto_schema(
+    operation_summary="List user orders",
+    operation_description="Retrieve a list of orders for the authenticated user. Staff users can see all orders.",
+    responses={200: OrderSerializer(many=True)}
+)
 class OrderListView(generics.ListCreateAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
@@ -131,6 +198,14 @@ class OrderListView(generics.ListCreateAPIView):
         serializer.save(customer=self.request.user)
 
 
+@swagger_auto_schema(
+    operation_summary="Get, update or delete an order",
+    operation_description="Retrieve, update or delete a specific order for the authenticated user. Staff users can access all orders.",
+    responses={
+        200: OrderSerializer,
+        404: "Order not found"
+    }
+)
 class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
@@ -147,6 +222,11 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
 # --- Purchases & Payments ---
 
 
+@swagger_auto_schema(
+    operation_summary="Manage purchases",
+    operation_description="Create, retrieve, update, or delete purchase records. Staff users can access all purchases.",
+    responses={200: PurchaseSerializer(many=True)}
+)
 class PurchaseViewSet(viewsets.ModelViewSet):
     serializer_class = PurchaseSerializer
     permission_classes = [IsAuthenticated]
@@ -159,6 +239,33 @@ class PurchaseViewSet(viewsets.ModelViewSet):
             else Purchase.objects.filter(created_by=user)
         )
 
+    @swagger_auto_schema(
+        operation_summary="Create a new purchase",
+        operation_description="Initiate a payment for an order using Chapa payment gateway.",
+        request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            required=['order_id', 'first_name', 'last_name', 'email'],
+            properties={
+                'order_id': openapi.Schema(type=openapi.TYPE_STRING, description='UUID of the order to pay for'),
+                'first_name': openapi.Schema(type=openapi.TYPE_STRING, description='Customer first name'),
+                'last_name': openapi.Schema(type=openapi.TYPE_STRING, description='Customer last name'),
+                'email': openapi.Schema(type=openapi.TYPE_STRING, format=openapi.FORMAT_EMAIL, description='Customer email'),
+            }
+        ),
+        responses={
+            201: openapi.Response(
+                description="Purchase created successfully",
+                examples={
+                    "application/json": {
+                        "checkout_url": "https://checkout.chapa.co/...",
+                        "tx_ref": "TX-ABC123DEF456",
+                        "purchase_id": "123e4567-e89b-12d3-a456-426614174000"
+                    }
+                }
+            ),
+            400: "Bad Request - Missing required fields or order already paid"
+        }
+    )
     def create(self, request):
         data = request.data
         required_fields = ("order_id", "first_name", "last_name", "email")
@@ -202,6 +309,32 @@ class PurchaseViewSet(viewsets.ModelViewSet):
             }
         )
 
+    @swagger_auto_schema(
+        method='get',
+        operation_summary="Verify payment",
+        operation_description="Verify the status of a payment transaction.",
+        manual_parameters=[
+            openapi.Parameter(
+                'tx_ref',
+                openapi.IN_PATH,
+                description="Transaction reference ID",
+                type=openapi.TYPE_STRING,
+                required=True
+            )
+        ],
+        responses={
+            200: openapi.Response(
+                description="Payment verification result",
+                examples={
+                    "application/json": {
+                        "status": "completed"
+                    }
+                }
+            ),
+            400: "Bad Request - Verification failed",
+            404: "Purchase not found"
+        }
+    )
     @action(detail=False, methods=["get"], url_path="verify/(?P<tx_ref>[^/.]+)")
     def verify_payment(self, request, tx_ref):
         purchase = get_object_or_404(
@@ -241,6 +374,11 @@ class PurchaseViewSet(viewsets.ModelViewSet):
 # --- Reviews ---
 
 
+@swagger_auto_schema(
+    operation_summary="List all reviews",
+    operation_description="Retrieve a list of all product reviews.",
+    responses={200: ReviewSerializer(many=True)}
+)
 class ReviewListView(generics.ListCreateAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -250,6 +388,14 @@ class ReviewListView(generics.ListCreateAPIView):
         serializer.save(customer=self.request.user)
 
 
+@swagger_auto_schema(
+    operation_summary="Get, update or delete a review",
+    operation_description="Retrieve, update or delete a specific product review by its UUID.",
+    responses={
+        200: ReviewSerializer,
+        404: "Review not found"
+    }
+)
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Review.objects.all()
     serializer_class = ReviewSerializer
@@ -259,6 +405,11 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
 # --- Inventory ---
 
 
+@swagger_auto_schema(
+    operation_summary="List all inventory items",
+    operation_description="Retrieve a list of all inventory items. Available to authenticated users only.",
+    responses={200: InventorySerializer(many=True)}
+)
 class InventoryListView(generics.ListCreateAPIView):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
@@ -268,6 +419,14 @@ class InventoryListView(generics.ListCreateAPIView):
     ordering = ["-created_at"]
 
 
+@swagger_auto_schema(
+    operation_summary="Get, update or delete inventory",
+    operation_description="Retrieve, update or delete a specific inventory item by its UUID. Available to authenticated users only.",
+    responses={
+        200: InventorySerializer,
+        404: "Inventory item not found"
+    }
+)
 class InventoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer

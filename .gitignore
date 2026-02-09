@@ -156,3 +156,16 @@ tests.py
 test_*.py
 test_receipt_task.py
 secret
+
+# Documentation and test files
+API_ENDPOINTS_WORKING.md
+DEPLOYMENT_GUIDE.md
+POSTMAN_TEST_GUIDE.md
+TEST_ALL_ENDPOINTS.sh
+test_api.sh
+QUICK_REFERENCE.txt
+POSTGRESQL_TROUBLESHOOTING.md
+ADMINER_SETUP.sh
+CELERY_*.md
+render.yaml
+staticfiles/
