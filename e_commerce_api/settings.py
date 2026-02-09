@@ -14,7 +14,8 @@ load_dotenv(BASE_DIR / ".env")
 # SECURITY
 SECRET_KEY = os.getenv("SECRET_KEY", "unsafe-dev-key")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-ALLOWED_HOSTS = [h.strip() for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
+# Allow all hosts temporarily for testing
+ALLOWED_HOSTS = ["*"]
 
 # CSRF trusted origins
 CSRF_TRUSTED_ORIGINS = [
@@ -160,8 +161,6 @@ DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
 SERVER_EMAIL = DEFAULT_FROM_EMAIL
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL", EMAIL_HOST_USER)
 
-# Frontend URL
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
 
 # Redis / Caching
 REDIS_CACHE_URL = os.getenv("REDIS_CACHE_URL", "redis://127.0.0.1:6379/1")
