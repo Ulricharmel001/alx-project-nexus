@@ -16,14 +16,22 @@ class IPTrackingMiddleware(MiddlewareMixin):
             return
 
         # Check if IP is blocked
-        if (
-            cache.get(f"blocked_{ip}")
-            or BlockedIP.objects.filter(ip_address=ip).exists()
-        ):
+        try:
+            is_blocked = cache.get(f"blocked_{ip}") or BlockedIP.objects.filter(ip_address=ip).exists()
+        except:
+            # If cache is unavailable, check database only
+            is_blocked = BlockedIP.objects.filter(ip_address=ip).exists()
+        
+        if is_blocked:
             return HttpResponseForbidden("Your IP has been blocked.")
 
         # Get geolocation with caching
-        geo_data = cache.get(f"geo_{ip}")
+        try:
+            geo_data = cache.get(f"geo_{ip}")
+        except:
+            # If cache is unavailable, skip caching but continue
+            geo_data = None
+            
         if not geo_data:
             try:
                 response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
@@ -37,7 +45,12 @@ class IPTrackingMiddleware(MiddlewareMixin):
                     geo_data = {"country": None, "city": None}
             except Exception:
                 geo_data = {"country": None, "city": None}
-            cache.set(f"geo_{ip}", geo_data, 60 * 60 * 24)  # Cache for 24 hours
+                
+            try:
+                cache.set(f"geo_{ip}", geo_data, 60 * 60 * 24)  # Cache for 24 hours
+            except:
+                # If caching fails, continue without caching
+                pass
 
         # Extract product ID from URL
         product_id = self.extract_product_id(request.path)
@@ -51,7 +64,7 @@ class IPTrackingMiddleware(MiddlewareMixin):
                 country=geo_data.get("country"),
                 city=geo_data.get("city"),
                 user_agent=request.META.get("HTTP_USER_AGENT", ""),
-                user_id=request.user.id if hasattr(request, 'user') and request.user.is_authenticated else None,
+                user_id=getattr(request, 'user', None).id if hasattr(request, 'user') and getattr(request, 'user', None) and getattr(getattr(request, 'user', None), 'is_authenticated', False) else None,
                 product_id=product_id,
                 session_key=getattr(request.session, 'session_key', None),
             )
