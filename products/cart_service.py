@@ -3,6 +3,8 @@ import uuid
 from decimal import Decimal
 
 from django.shortcuts import get_object_or_404
+from drf_yasg import openapi
+from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics
 from rest_framework.decorators import api_view
 from rest_framework.permissions import IsAuthenticated
@@ -17,6 +19,11 @@ from .tasks import generate_and_send_receipt_email
 logger = logging.getLogger(__name__)
 
 
+@swagger_auto_schema(
+    operation_summary="Get or update user's cart",
+    operation_description="Retrieve or update the authenticated user's shopping cart.",
+    responses={200: CartSerializer}
+)
 class CartView(generics.RetrieveUpdateAPIView):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
@@ -26,6 +33,11 @@ class CartView(generics.RetrieveUpdateAPIView):
         return cart
 
 
+@swagger_auto_schema(
+    operation_summary="List or add items to cart",
+    operation_description="Retrieve list of items in the user's cart or add a new item to the cart.",
+    responses={200: CartItemSerializer(many=True)}
+)
 class CartItemView(generics.ListCreateAPIView):
     serializer_class = CartItemSerializer
     permission_classes = [IsAuthenticated]

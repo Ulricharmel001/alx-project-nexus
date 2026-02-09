@@ -52,7 +52,7 @@ class RegistrationSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data.pop("password2")
         user = CustomUser.objects.create_user(**validated_data)
-        UserProfile.objects.create(user=user)
+        # UserProfile will be created automatically by the signal
         return user
 
 

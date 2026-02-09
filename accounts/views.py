@@ -386,7 +386,7 @@ class GoogleCallbackView(APIView):
                 )
             user, created = GoogleAuthHandler.get_or_create_user(google_user_data)
             if created:
-                UserProfile.objects.create(user=user)
+                # UserProfile will be created automatically by the signal
                 code = store_verification_code(user.email)
                 send_verification_email(user.email, code)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
@@ -427,7 +427,7 @@ class GoogleTokenView(APIView):
                 )
             user, created = GoogleAuthHandler.get_or_create_user(google_user_data)
             if created:
-                UserProfile.objects.create(user=user)
+                # UserProfile will be created automatically by the signal
                 code = store_verification_code(user.email)
                 send_verification_email(user.email, code)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
