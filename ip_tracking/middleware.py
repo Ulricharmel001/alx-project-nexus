@@ -26,12 +26,16 @@ class IPTrackingMiddleware(MiddlewareMixin):
         geo_data = cache.get(f"geo_{ip}")
         if not geo_data:
             try:
-                response = requests.get(f"https://ipinfo.io/{ip}/json").json()
-                geo_data = {
-                    "country": response.get("country"),
-                    "city": response.get("city"),
-                }
-            except:
+                response = requests.get(f"https://ipinfo.io/{ip}/json", timeout=5)
+                if response.status_code == 200:
+                    data = response.json()
+                    geo_data = {
+                        "country": data.get("country"),
+                        "city": data.get("city"),
+                    }
+                else:
+                    geo_data = {"country": None, "city": None}
+            except Exception:
                 geo_data = {"country": None, "city": None}
             cache.set(f"geo_{ip}", geo_data, 60 * 60 * 24)  # Cache for 24 hours
 
@@ -39,17 +43,21 @@ class IPTrackingMiddleware(MiddlewareMixin):
         product_id = self.extract_product_id(request.path)
 
         # Log the request
-        RequestLog.objects.create(
-            ip_address=ip,
-            path=request.path,
-            method=request.method,
-            country=geo_data.get("country"),
-            city=geo_data.get("city"),
-            user_agent=request.META.get("HTTP_USER_AGENT", ""),
-            user_id=request.user.id if request.user.is_authenticated else None,
-            product_id=product_id,
-            session_key=request.session.session_key,
-        )
+        try:
+            RequestLog.objects.create(
+                ip_address=ip,
+                path=request.path,
+                method=request.method,
+                country=geo_data.get("country"),
+                city=geo_data.get("city"),
+                user_agent=request.META.get("HTTP_USER_AGENT", ""),
+                user_id=request.user.id if hasattr(request, 'user') and request.user.is_authenticated else None,
+                product_id=product_id,
+                session_key=getattr(request.session, 'session_key', None),
+            )
+        except Exception:
+            # If logging fails, don't break the request
+            pass
 
     def extract_product_id(self, path):
         # Match UUID pattern in URL

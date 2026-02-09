@@ -4,11 +4,8 @@ from pathlib import Path
 
 import dj_database_url
 from dotenv import load_dotenv
-
-# Base directory
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-# Load environment variables
 load_dotenv(BASE_DIR / ".env")
 
 # SECURITY
@@ -30,7 +27,9 @@ AUTH_USER_MODEL = "accounts.CustomUser"
 # Email verification settings
 EMAIL_VERIFICATION_SECRET_KEY = os.getenv("EMAIL_VERIFICATION_SECRET_KEY", SECRET_KEY)
 EMAIL_VERIFICATION_TIMEOUT = int(os.getenv("EMAIL_VERIFICATION_TIMEOUT", 3600))
-EMAIL_VERIFICATION_SENDER = os.getenv("EMAIL_VERIFICATION_SENDER", "noreply@ecommerce.com")
+EMAIL_VERIFICATION_SENDER = os.getenv(
+    "EMAIL_VERIFICATION_SENDER", "noreply@ecommerce.com"
+)
 
 # Google OAuth2
 GOOGLE_OAUTH2_CLIENT_ID = os.getenv("GOOGLE_OAUTH2_CLIENT_ID")
@@ -123,13 +122,14 @@ else:
         }
     }
 
-# Enforce SSL for Postgres if required
 if os.getenv("POSTGRES_SSL", "False").lower() == "true":
     DATABASES["default"]["OPTIONS"] = {"sslmode": "require"}
 
 # Password validators
 AUTH_PASSWORD_VALIDATORS = [
-    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
+    {
+        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+    },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -148,7 +148,9 @@ STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-CORS_ALLOWED_ORIGINS = [o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o]
+CORS_ALLOWED_ORIGINS = [
+    o.strip() for o in os.getenv("CORS_ALLOWED_ORIGINS", "").split(",") if o
+]
 
 # Email configuration
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
@@ -174,7 +176,9 @@ CACHES = {
 
 # REST framework
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["rest_framework_simplejwt.authentication.JWTAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework_simplejwt.authentication.JWTAuthentication"
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_THROTTLE_CLASSES": [
         "rest_framework.throttling.AnonRateThrottle",
