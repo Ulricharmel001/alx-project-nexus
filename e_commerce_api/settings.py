@@ -1,6 +1,7 @@
 import os
 from datetime import timedelta
 from pathlib import Path
+from urllib.parse import urlparse, urlunparse
 
 import dj_database_url
 from dotenv import load_dotenv
@@ -148,11 +149,18 @@ SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL")
 # Cache / Redis
 CACHE_URL = os.getenv("CACHE_URL")
 if CACHE_URL:
+    parsed = urlparse(CACHE_URL)
+    cache_loc = urlunparse(
+        parsed._replace(query="")
+    )  # strip query params for django-redis
+    cache_opts = {"CLIENT_CLASS": "django_redis.client.DefaultClient"}
+    if parsed.scheme == "rediss":
+        cache_opts["REDIS_CLIENT_KWARGS"] = {"ssl_cert_reqs": None}
     CACHES = {
         "default": {
             "BACKEND": "django_redis.cache.RedisCache",
-            "LOCATION": CACHE_URL,
-            "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+            "LOCATION": cache_loc,
+            "OPTIONS": cache_opts,
         }
     }
 else:
