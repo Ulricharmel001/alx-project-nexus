@@ -18,6 +18,15 @@ CSRF_TRUSTED_ORIGINS = [
     origin for origin in os.getenv("CSRF_TRUSTED_ORIGINS", "").split(",") if origin
 ]
 
+if not DEBUG:
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
 # Custom user
 AUTH_USER_MODEL = "accounts.CustomUser"
 
@@ -98,7 +107,8 @@ DATABASES = {
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
     {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
+        "NAME": "django.contrib.auth.password_validation."
+        "UserAttributeSimilarityValidator",
     },
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
@@ -151,6 +161,7 @@ else:
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
         }
     }
+    SILENCED_SYSTEM_CHECKS = ["django_ratelimit.E003", "django_ratelimit.W001"]
 
 # DRF (API)
 REST_FRAMEWORK = {

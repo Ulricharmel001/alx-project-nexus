@@ -112,10 +112,6 @@ backup/
 backup.json
 ecommerce_backup.sql
 
-#migration files
-*/migrations/*.py
-*/migrations/*.pyc
-!*/migrations/__init__.py
 # Ignore test coverage files
 htmlcov/
 .tox/
@@ -137,11 +133,6 @@ ip_traacking/__pycache__/
 ip_tracking/demo.py
 
 data_seeder.py
-
-#Ignore migration files
-*/migrations/*.py
-*/migrations/*.pyc
-!*/migrations/__init__.py
 
 # Local test & experimental files
 accounts/tests.py
@@ -167,5 +158,4 @@ QUICK_REFERENCE.txt
 POSTGRESQL_TROUBLESHOOTING.md
 ADMINER_SETUP.sh
 CELERY_*.md
-render.yaml
 staticfiles/
