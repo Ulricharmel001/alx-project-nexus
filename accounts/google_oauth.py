@@ -6,8 +6,6 @@ import logging
 import requests
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from google.auth.transport import requests as google_requests
-from google.oauth2 import id_token
 from rest_framework_simplejwt.tokens import RefreshToken
 
 User = get_user_model()
@@ -29,6 +27,9 @@ class GoogleAuthHandler:
             dict: User information or None if verification fails
         """
         try:
+            from google.auth.transport import requests as google_requests
+            from google.oauth2 import id_token
+
             idinfo = id_token.verify_oauth2_token(
                 token, google_requests.Request(), settings.GOOGLE_OAUTH2_CLIENT_ID
             )

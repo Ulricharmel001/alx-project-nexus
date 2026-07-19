@@ -136,7 +136,6 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = [
             "id",
             "customer",
-            "total_price",
             "created_at",
             "updated_at",
         ]
@@ -259,6 +258,22 @@ class ReviewSerializer(serializers.ModelSerializer):
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        request = self.context.get("request")
+        if request and request.user.is_authenticated:
+            product = attrs.get("product")
+            if (
+                product
+                and Review.objects.filter(
+                    product=product, customer=request.user
+                ).exists()
+            ):
+                raise serializers.ValidationError(
+                    "You have already reviewed this product."
+                )
+        return attrs
 
     def create(self, validated_data):
         validated_data["customer"] = self.context["request"].user

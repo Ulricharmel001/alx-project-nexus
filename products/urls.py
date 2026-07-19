@@ -6,30 +6,28 @@ from . import cart_service, views
 app_name = "products"
 
 router = DefaultRouter()
-router.register(r"purchases", views.PurchaseViewSet, basename="purchase")
+router.register("purchases", views.PurchaseViewSet, basename="purchase")
 
 urlpatterns = [
-    # Products (browsing)
-    path("products/", views.ProductListView.as_view(), name="product-list"),
-    path(
-        "products/<uuid:pk>/", views.ProductDetailView.as_view(), name="product-detail"
-    ),
-    path("products/search/", views.product_search, name="product-search"),
+    # Products
+    path("", views.ProductListView.as_view(), name="product-list"),
+    path("<uuid:pk>/", views.ProductDetailView.as_view(), name="product-detail"),
+    path("search/", views.product_search, name="product-search"),
     # Categories
-    path("categories/", views.CategoryListView.as_view(), name="category-list"),
+    path("categories/", views.CategoryListView.as_view(), name="categories-list"),
     path(
         "categories/<uuid:pk>/",
         views.CategoryDetailView.as_view(),
-        name="category-detail",
+        name="categories-detail",
     ),
     path("categories/tree/", views.category_tree, name="category-tree"),
-    # Cart functionality
+    # Cart
     path("cart/", cart_service.CartView.as_view(), name="cart"),
-    path("cart/items/", cart_service.CartItemView.as_view(), name="cart-items"),
+    path("cart/items/", cart_service.CartItemView.as_view(), name="cart-items-list"),
     path(
         "cart/items/<uuid:pk>/",
         cart_service.CartItemDetailView.as_view(),
-        name="cart-item-detail",
+        name="cart-items-detail",
     ),
     path("cart/add/", cart_service.add_to_cart, name="add-to-cart"),
     path(
@@ -43,25 +41,27 @@ urlpatterns = [
         name="update-cart-item",
     ),
     path("cart/clear/", cart_service.clear_cart, name="clear-cart"),
+    # Addresses
     path("addresses/", views.AddressListView.as_view(), name="address-list"),
     path(
         "addresses/<uuid:pk>/", views.AddressDetailView.as_view(), name="address-detail"
     ),
-    # Checkout and orders
+    # Orders
     path("checkout/", cart_service.checkout, name="checkout"),
     path("orders/", views.OrderListView.as_view(), name="order-list"),
     path("orders/<uuid:pk>/", views.OrderDetailView.as_view(), name="order-detail"),
-    # Purchases and payments
-    path("", include(router.urls)),
-    path("payment-test/", cart_service.initiate_payment_test, name="payment-test"),
     # Reviews
-    path("reviews/", views.ReviewListView.as_view(), name="review-list"),
-    path("reviews/<uuid:pk>/", views.ReviewDetailView.as_view(), name="review-detail"),
-    # Inventory (admin only)
+    path("reviews/", views.ReviewListView.as_view(), name="reviews-list"),
+    path("reviews/<uuid:pk>/", views.ReviewDetailView.as_view(), name="reviews-detail"),
+    # Inventory
     path("inventory/", views.InventoryListView.as_view(), name="inventory-list"),
     path(
         "inventory/<uuid:pk>/",
         views.InventoryDetailView.as_view(),
         name="inventory-detail",
     ),
+    # Payment test
+    path("payment-test/", cart_service.initiate_payment_test, name="payment-test"),
+    # ViewSets LAST
+    path("", include(router.urls)),
 ]
