@@ -84,7 +84,7 @@ class RegistrationView(APIView):
 
             return Response(
                 {
-                    "message": "User registered successfully. Please check your email for verification code.",
+                    "message": "User registered. Check email for verification code.",
                     "user": UserDetailSerializer(user).data,
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
@@ -308,7 +308,7 @@ class ResendVerificationEmailView(APIView):
                 if not can_resend:
                     return Response(
                         {
-                            "error": f"Please wait {wait_time} seconds before requesting a new code"
+                            "error": f"Wait {wait_time}s before requesting a new code"
                         },
                         status=status.HTTP_429_TOO_MANY_REQUESTS,
                     )
@@ -357,12 +357,25 @@ class GoogleCallbackView(APIView):
 
     permission_classes = [AllowAny]
 
+    def get(self, request):
+        error = request.query_params.get("error")
+        if error:
+            return Response(
+                {"error": f"Google authorization failed: {error}"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        code = request.query_params.get("code")
+        return self._handle_code(code, request)
+
     def post(self, request):
+        code = request.data.get("code")
+        return self._handle_code(code, request)
+
+    def _handle_code(self, code, request):
         from django.conf import settings
 
         from .google_oauth import GoogleAuthHandler
 
-        code = request.data.get("code")
         if not code:
             return Response(
                 {"error": "Authorization code is required"},
