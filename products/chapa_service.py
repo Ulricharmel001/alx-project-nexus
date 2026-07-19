@@ -12,7 +12,9 @@ class ChapaService:
             "Content-Type": "application/json",
         }
 
-    def initiate_payment(self, first_name, last_name, email, amount, tx_ref):
+    def initiate_payment(
+        self, first_name, last_name, email, amount, tx_ref, return_url=None
+    ):
         url = f"{self.base_url}transaction/initialize"
         payload = {
             "first_name": first_name,
@@ -21,10 +23,14 @@ class ChapaService:
             "amount": float(amount),
             "tx_ref": str(tx_ref),
             "currency": "ETB",
-            "return_url": "http://127.0.0.1:8000/api/products/verify_payment/",
+            "return_url": return_url
+            or os.getenv(
+                "CHAPA_RETURN_URL",
+                "http://127.0.0.1:8000/api/v1/products/purchases/verify/",
+            ),
             "customization": {
-                "title": "Payment for Product",
-                "description": "Payment for purchasing a product",
+                "title": "Nexus Pay",
+                "description": "Payment for product",
             },
         }
         try:

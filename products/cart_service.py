@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 @swagger_auto_schema(
     operation_summary="Get or update user's cart",
     operation_description="Retrieve or update the authenticated user's shopping cart.",
-    responses={200: CartSerializer}
+    responses={200: CartSerializer},
 )
 class CartView(generics.RetrieveUpdateAPIView):
     serializer_class = CartSerializer
@@ -36,7 +36,7 @@ class CartView(generics.RetrieveUpdateAPIView):
 @swagger_auto_schema(
     operation_summary="List or add items to cart",
     operation_description="Retrieve list of items in the user's cart or add a new item to the cart.",
-    responses={200: CartItemSerializer(many=True)}
+    responses={200: CartItemSerializer(many=True)},
 )
 class CartItemView(generics.ListCreateAPIView):
     serializer_class = CartItemSerializer
@@ -294,6 +294,9 @@ def initiate_payment_test(request):
         return Response({"error": "Order already paid"}, status=400)
 
     tx_ref = f"TX-{uuid.uuid4().hex[:12].upper()}"
+    return_url = request.build_absolute_uri(
+        f"/api/v1/products/purchases/verify/{tx_ref}/"
+    )
     chapa = ChapaService()
     response = chapa.initiate_payment(
         first_name=first_name,
@@ -301,6 +304,7 @@ def initiate_payment_test(request):
         email=email,
         amount=Decimal(order.total_price),
         tx_ref=tx_ref,
+        return_url=return_url,
     )
 
     if response.get("status") != "success":

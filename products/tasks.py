@@ -3,7 +3,7 @@ from io import BytesIO
 
 from celery import shared_task
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
@@ -53,13 +53,11 @@ def generate_and_send_receipt_email(purchase_id):
         )
 
         # Send email with PDF attachment
-        send_mail(
+        email = EmailMultiAlternatives(
             subject=subject,
-            message=email_body,
+            body=email_body,
             from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[recipient_email],
-            html_message=email_body,
-            fail_silently=False,
+            to=[recipient_email],
             attachments=[
                 (
                     f"receipt_{purchase.transaction_reference}.pdf",
@@ -68,6 +66,8 @@ def generate_and_send_receipt_email(purchase_id):
                 )
             ],
         )
+        email.attach_alternative(email_body, "text/html")
+        email.send(fail_silently=False)
 
         logger.info(f"Receipt email sent successfully for purchase: {purchase_id}")
         return True
