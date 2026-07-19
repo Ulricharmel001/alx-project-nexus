@@ -72,7 +72,7 @@ services:
     runtime: python
     plan: free
     buildCommand: pip install -r requirements.txt
-    startCommand: celery -A e_commerce_api worker -l info -c 1
+    startCommand: celery -A e_commerce_api worker -l info -c 1 -Q email,default
     envVars:
       - key: DJANGO_SETTINGS_MODULE
         value: e_commerce_api.settings
