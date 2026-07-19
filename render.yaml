@@ -102,6 +102,10 @@ services:
         sync: false
       - key: EMAIL_VERIFICATION_SECRET_KEY
         sync: false
+      - key: SERVER_EMAIL
+        sync: false
+      - key: SUPPORT_EMAIL
+        value: support@nexus.com
       - key: FRONTEND_URL
         value: https://nexus-api.onrender.com
       - key: CACHE_URL
