@@ -1,0 +1,108 @@
+services:
+  - type: web
+    name: nexus-api
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
+    startCommand: gunicorn e_commerce_api.wsgi:application --workers 2 --timeout 120 --access-logfile - --bind 0.0.0.0:$PORT
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: e_commerce_api.settings
+      - key: SECRET_KEY
+        sync: false
+      - key: DEBUG
+        value: "False"
+      - key: ALLOWED_HOSTS
+        value: ".onrender.com"
+      - key: DATABASE_URL
+        sync: false
+      - key: CELERY_BROKER_URL
+        sync: false
+      - key: CELERY_RESULT_BACKEND
+        sync: false
+      - key: CACHE_URL
+        sync: false
+      - key: CHAPA_PUBLIC_KEY
+        sync: false
+      - key: CHAPA_SECRET_KEY
+        sync: false
+      - key: CHAPA_ENCRYPTION_KEY
+        sync: false
+      - key: CHAPA_RETURN_URL
+        value: https://nexus-api.onrender.com/api/v1/products/purchases/verify/
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: SERVER_EMAIL
+        sync: false
+      - key: SUPPORT_EMAIL
+        value: support@nexus.com
+      - key: EMAIL_VERIFICATION_SECRET_KEY
+        sync: false
+      - key: EMAIL_VERIFICATION_TIMEOUT
+        value: "3600"
+      - key: EMAIL_VERIFICATION_SENDER
+        value: noreply@nexus.com
+      - key: GOOGLE_OAUTH2_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH2_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH2_REDIRECT_URI
+        value: https://nexus-api.onrender.com/api/v1/accounts/google/callback/
+      - key: CORS_ALLOWED_ORIGINS
+        value: https://nexus-api.onrender.com,https://*.onrender.com
+      - key: CSRF_TRUSTED_ORIGINS
+        value: https://*.onrender.com
+      - key: FRONTEND_URL
+        value: https://nexus-api.onrender.com
+
+  - type: worker
+    name: nexus-celery
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: celery -A e_commerce_api worker -l info -c 1
+    envVars:
+      - key: DJANGO_SETTINGS_MODULE
+        value: e_commerce_api.settings
+      - key: SECRET_KEY
+        sync: false
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        sync: false
+      - key: CELERY_BROKER_URL
+        sync: false
+      - key: CELERY_RESULT_BACKEND
+        sync: false
+      - key: EMAIL_BACKEND
+        value: django.core.mail.backends.smtp.EmailBackend
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: "587"
+      - key: EMAIL_USE_TLS
+        value: "True"
+      - key: EMAIL_HOST_USER
+        sync: false
+      - key: EMAIL_HOST_PASSWORD
+        sync: false
+      - key: DEFAULT_FROM_EMAIL
+        sync: false
+      - key: EMAIL_VERIFICATION_SECRET_KEY
+        sync: false
+      - key: FRONTEND_URL
+        value: https://nexus-api.onrender.com
+      - key: CACHE_URL
+        sync: false
