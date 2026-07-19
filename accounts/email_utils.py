@@ -87,34 +87,16 @@ def can_resend_code(email):
 
 def send_verification_email(email, code):
     try:
-        from django.conf import settings
-        from django.core.mail import send_mail
+        from accounts.tasks import send_verification_email_task
 
-        send_mail(
-            subject="Email Verification Code",
-            message=f"""
-Hello,
+        task = send_verification_email_task.delay(email, code)
 
-Your email verification code is: {code}
-
-This code will expire in 5 minutes.
-
-If you didn't request this, please ignore this email.
-
-Best regards,
-Ulrich E-Commerce Team
-        """,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-        )
-
-        logger.info(f"Verification email sent to {email}")
-        return True, "Verification email sent successfully"
+        logger.info(f"Verification email queued for {email} (Task ID: {task.id})")
+        return True, "Verification email has been queued and will be sent shortly"
 
     except Exception as e:
-        logger.error(f"Failed to send verification email: {str(e)}")
-        return False, f"Failed to send verification email: {str(e)}"
+        logger.error(f"Failed to queue verification email: {str(e)}")
+        return False, f"Failed to queue verification email: {str(e)}"
 
 
 def send_password_reset_email(user, reset_token, uid):
