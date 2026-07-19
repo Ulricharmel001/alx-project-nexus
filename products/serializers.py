@@ -177,7 +177,9 @@ class PurchaseSerializer(serializers.ModelSerializer):
         return value.upper()
 
     def create(self, validated_data):
-        validated_data["created_by"] = self.context["request"].user
+        user = self.context["request"].user
+        if user.is_authenticated:
+            validated_data["created_by"] = user
         validated_data["status"] = "pending"
         return super().create(validated_data)
 
@@ -276,7 +278,9 @@ class ReviewSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
-        validated_data["customer"] = self.context["request"].user
+        user = self.context["request"].user
+        if user.is_authenticated:
+            validated_data["customer"] = user
         return super().create(validated_data)
 
     def validate_rating(self, value):
