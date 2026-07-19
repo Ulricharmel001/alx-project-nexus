@@ -136,13 +136,21 @@ SERVER_EMAIL = os.getenv("SERVER_EMAIL")
 SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL")
 
 # Cache / Redis
-CACHES = {
-    "default": {
-        "BACKEND": "django_redis.cache.RedisCache",
-        "LOCATION": os.getenv("CELERY_BROKER_URL", "redis://127.0.0.1:6379/0"),
-        "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+CACHE_URL = os.getenv("CACHE_URL")
+if CACHE_URL:
+    CACHES = {
+        "default": {
+            "BACKEND": "django_redis.cache.RedisCache",
+            "LOCATION": CACHE_URL,
+            "OPTIONS": {"CLIENT_CLASS": "django_redis.client.DefaultClient"},
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        }
+    }
 
 # DRF (API)
 REST_FRAMEWORK = {
