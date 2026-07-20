@@ -90,15 +90,24 @@ def send_verification_email(email, code):
         from django.conf import settings
         from django.core.mail import send_mail
 
+        subject = "Email Verification Code"
+        body = "\n".join(
+            [
+                "Hello,",
+                "",
+                f"Your email verification code is: {code}",
+                "",
+                "This code will expire in 5 minutes.",
+                "",
+                "If you didn't request this, please ignore this email.",
+                "",
+                "Best regards,",
+                "Ulrich E-Commerce Team",
+            ]
+        )
         send_mail(
-            subject="Email Verification Code",
-            message=(
-                f"Hello,\n\n"
-                f"Your email verification code is: {code}\n\n"
-                f"This code will expire in 5 minutes.\n\n"
-                f"If you didn't request this, please ignore this email.\n\n"
-                f"Best regards,\nUlrich E-Commerce Team"
-            ),
+            subject=subject,
+            message=body,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
             fail_silently=False,
