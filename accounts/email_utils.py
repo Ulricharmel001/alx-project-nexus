@@ -87,31 +87,38 @@ def can_resend_code(email):
 
 def send_verification_email(email, code):
     try:
-        from django.conf import settings
-        from django.core.mail import send_mail
+        import smtplib
+        from email.mime.text import MIMEText
 
-        subject = "Email Verification Code"
-        body = "\n".join(
-            [
-                "Hello,",
-                "",
-                f"Your email verification code is: {code}",
-                "",
-                "This code will expire in 5 minutes.",
-                "",
-                "If you didn't request this, please ignore this email.",
-                "",
-                "Best regards,",
-                "Ulrich E-Commerce Team",
-            ]
+        from django.conf import settings
+
+        msg = MIMEText(
+            "\n".join(
+                [
+                    "Hello,",
+                    "",
+                    f"Your email verification code is: {code}",
+                    "",
+                    "This code will expire in 5 minutes.",
+                    "",
+                    "If you didn't request this, please ignore this email.",
+                    "",
+                    "Best regards,",
+                    "Ulrich E-Commerce Team",
+                ]
+            )
         )
-        send_mail(
-            subject=subject,
-            message=body,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[email],
-            fail_silently=False,
-        )
+        msg["Subject"] = "Email Verification Code"
+        msg["From"] = settings.DEFAULT_FROM_EMAIL
+        msg["To"] = email
+
+        server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=15)
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+        server.sendmail(settings.DEFAULT_FROM_EMAIL, [email], msg.as_string())
+        server.quit()
 
         logger.info(f"Verification email sent to {email}")
         return True, "Verification email sent"
