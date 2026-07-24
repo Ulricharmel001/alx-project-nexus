@@ -61,11 +61,11 @@ services:
       - key: GOOGLE_OAUTH2_REDIRECT_URI
         value: https://nexus-api.onrender.com/api/v1/accounts/google/callback/
       - key: CORS_ALLOWED_ORIGINS
-        value: https://nexus-api.onrender.com,https://*.onrender.com
+        value: https://nexus-api.onrender.com,https://*.onrender.com,https://nexus-sparkle-04.vercel.app
       - key: CSRF_TRUSTED_ORIGINS
-        value: https://*.onrender.com
+        value: https://*.onrender.com,https://nexus-sparkle-04.vercel.app
       - key: FRONTEND_URL
-        value: https://nexus-api.onrender.com
+        value: https://nexus-sparkle-04.vercel.app
 
   - type: worker
     name: nexus-celery
@@ -107,6 +107,6 @@ services:
       - key: SUPPORT_EMAIL
         value: support@nexus.com
       - key: FRONTEND_URL
-        value: https://nexus-api.onrender.com
+        value: https://nexus-sparkle-04.vercel.app
       - key: CACHE_URL
         sync: false
