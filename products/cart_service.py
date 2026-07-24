@@ -6,8 +6,8 @@ from django.shortcuts import get_object_or_404
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import generics
-from rest_framework.decorators import api_view
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from .chapa_service import ChapaService
@@ -269,6 +269,221 @@ def checkout(request):
     except Exception as e:
         logger.error(f"Checkout error: {str(e)}")
         return Response({"error": "An error occurred during checkout"}, status=500)
+
+
+@swagger_auto_schema(
+    method="post",
+    operation_summary="Guest checkout",
+    operation_description="Checkout without creating an account. Provide customer details and cart items directly.",
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        required=[
+            "first_name",
+            "last_name",
+            "email",
+            "items",
+            "street",
+            "city",
+            "state",
+            "country",
+            "postal_code",
+        ],
+        properties={
+            "first_name": openapi.Schema(
+                type=openapi.TYPE_STRING, description="Customer first name"
+            ),
+            "last_name": openapi.Schema(
+                type=openapi.TYPE_STRING, description="Customer last name"
+            ),
+            "email": openapi.Schema(
+                type=openapi.TYPE_STRING,
+                format="email",
+                description="Customer email for receipt",
+            ),
+            "street": openapi.Schema(
+                type=openapi.TYPE_STRING, description="Shipping street address"
+            ),
+            "city": openapi.Schema(type=openapi.TYPE_STRING, description="City"),
+            "state": openapi.Schema(
+                type=openapi.TYPE_STRING, description="State/Region"
+            ),
+            "country": openapi.Schema(type=openapi.TYPE_STRING, description="Country"),
+            "postal_code": openapi.Schema(
+                type=openapi.TYPE_STRING, description="Postal code"
+            ),
+            "items": openapi.Schema(
+                type=openapi.TYPE_ARRAY,
+                items=openapi.Schema(
+                    type=openapi.TYPE_OBJECT,
+                    properties={
+                        "product_id": openapi.Schema(
+                            type=openapi.TYPE_STRING, description="Product UUID"
+                        ),
+                        "quantity": openapi.Schema(
+                            type=openapi.TYPE_INTEGER, description="Quantity"
+                        ),
+                    },
+                ),
+            ),
+        },
+    ),
+    responses={
+        201: openapi.Response(
+            description="Checkout successful",
+            examples={
+                "application/json": {
+                    "checkout_url": "https://checkout.chapa.co/...",
+                    "tx_ref": "TX-...",
+                    "purchase_id": "uuid",
+                }
+            },
+        ),
+        400: "Bad Request",
+    },
+)
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def guest_checkout(request):
+    """
+    Guest checkout — no account required.
+    Creates address, order, order items, and initiates payment in one call.
+    """
+    data = request.data
+
+    required = (
+        "first_name",
+        "last_name",
+        "email",
+        "items",
+        "street",
+        "city",
+        "state",
+        "country",
+        "postal_code",
+    )
+    missing = [f for f in required if not data.get(f)]
+    if missing:
+        return Response(
+            {"error": f"Missing required fields: {', '.join(missing)}"}, status=400
+        )
+
+    first_name = data["first_name"]
+    last_name = data["last_name"]
+    email = data["email"]
+    items_data = data["items"]
+    street = data["street"]
+    city = data["city"]
+    state = data["state"]
+    country = data["country"]
+    postal_code = data["postal_code"]
+
+    if not items_data or not isinstance(items_data, list):
+        return Response({"error": "Items must be a non-empty array"}, status=400)
+
+    # Validate products and check inventory
+    product_quantities = []
+    total_price = Decimal("0.00")
+    for item in items_data:
+        pid = item.get("product_id")
+        qty = int(item.get("quantity", 1))
+        if not pid:
+            return Response({"error": "Each item must have a product_id"}, status=400)
+        if qty < 1:
+            return Response({"error": "Quantity must be at least 1"}, status=400)
+
+        try:
+            product = Product.objects.get(id=pid, is_active=True)
+        except Product.DoesNotExist:
+            return Response({"error": f"Product not found: {pid}"}, status=404)
+
+        try:
+            inventory = product.inventory
+            if inventory.available_quantity() < qty:
+                return Response(
+                    {
+                        "error": f"Insufficient inventory for '{product.name}'. Only {inventory.available_quantity()} available."
+                    },
+                    status=400,
+                )
+        except Inventory.DoesNotExist:
+            return Response(
+                {"error": f"No inventory record for product: {product.name}"},
+                status=400,
+            )
+
+        subtotal = product.price * qty
+        total_price += subtotal
+        product_quantities.append((product, qty, subtotal))
+
+    # Create address (guest, no customer)
+    address = Address.objects.create(
+        street=street,
+        city=city,
+        state=state,
+        country=country,
+        postal_code=postal_code,
+    )
+
+    # Create order
+    order = Order.objects.create(
+        shipping_address=address,
+        total_price=total_price,
+        currency="CFA",
+        guest_email=email,
+        guest_first_name=first_name,
+        guest_last_name=last_name,
+    )
+
+    # Create order items and reserve inventory
+    for product, qty, subtotal in product_quantities:
+        OrderItem.objects.create(
+            order=order,
+            product=product,
+            quantity=qty,
+            unit_price_at_purchase=product.price,
+            subtotal=subtotal,
+        )
+        inventory = product.inventory
+        inventory.reserved_quantity += qty
+        inventory.save()
+
+    # Initiate payment
+    tx_ref = f"TX-{uuid.uuid4().hex[:12].upper()}"
+    return_url = request.build_absolute_uri(
+        f"/api/v1/products/purchases/verify/{tx_ref}/"
+    )
+    chapa = ChapaService()
+    payment_response = chapa.initiate_payment(
+        first_name=first_name,
+        last_name=last_name,
+        email=email,
+        amount=Decimal(order.total_price),
+        tx_ref=tx_ref,
+        return_url=return_url,
+    )
+
+    if payment_response.get("status") != "success":
+        return Response({"error": "Payment initiation failed"}, status=400)
+
+    from .models import Purchase
+
+    purchase = Purchase.objects.create(
+        order=order,
+        provider="chapa",
+        amount=order.total_price,
+        currency="ETB",
+        status="pending",
+        transaction_reference=tx_ref,
+    )
+
+    return Response(
+        {
+            "checkout_url": payment_response["data"]["checkout_url"],
+            "tx_ref": tx_ref,
+            "purchase_id": purchase.id,
+        },
+        status=201,
+    )
 
 
 @api_view(["POST"])

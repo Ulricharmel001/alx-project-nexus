@@ -9,9 +9,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .email_utils import (can_resend_code, send_verification_email,
-                          send_welcome_email, store_verification_code,
-                          verify_code)
+from .email_utils import (can_resend_code, send_welcome_email,
+                          store_verification_code, verify_code)
 from .models import CustomUser, UserProfile
 from .serializers import (ChangePasswordSerializer,
                           EmailVerificationSerializer, LoginSerializer,
@@ -20,6 +19,7 @@ from .serializers import (ChangePasswordSerializer,
                           RegistrationSerializer,
                           ResendVerificationEmailSerializer,
                           UserDetailSerializer, UserProfileSerializer)
+from .tasks import send_verification_email_task
 
 
 class RegistrationView(APIView):
@@ -77,7 +77,7 @@ class RegistrationView(APIView):
             code = store_verification_code(user.email)
 
             # Queue email send via Celery (returns immediately, email sent async)
-            send_verification_email(user.email, code)
+            send_verification_email_task.delay(user.email, code)
 
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
@@ -307,9 +307,7 @@ class ResendVerificationEmailView(APIView):
                 can_resend, wait_time = can_resend_code(email)
                 if not can_resend:
                     return Response(
-                        {
-                            "error": f"Wait {wait_time}s before requesting a new code"
-                        },
+                        {"error": f"Wait {wait_time}s before requesting a new code"},
                         status=status.HTTP_429_TOO_MANY_REQUESTS,
                     )
 
@@ -317,19 +315,14 @@ class ResendVerificationEmailView(APIView):
                 code = store_verification_code(email)
 
                 # Queue email send via Celery (returns immediately, email sent async)
-                success, message = send_verification_email(email, code)
-                if success:
-                    return Response(
-                        {
-                            "message": message,
-                            "code_expires_in": 300,  # 5 minutes in seconds
-                        },
-                        status=status.HTTP_200_OK,
-                    )
-                else:
-                    return Response(
-                        {"error": message}, status=status.HTTP_400_BAD_REQUEST
-                    )
+                send_verification_email_task.delay(email, code)
+                return Response(
+                    {
+                        "message": "Verification email sent",
+                        "code_expires_in": 300,  # 5 minutes in seconds
+                    },
+                    status=status.HTTP_200_OK,
+                )
             except CustomUser.DoesNotExist:
                 return Response(
                     {"error": "User not found"}, status=status.HTTP_404_NOT_FOUND
@@ -401,7 +394,7 @@ class GoogleCallbackView(APIView):
             if created:
                 # UserProfile will be created automatically by the signal
                 code = store_verification_code(user.email)
-                send_verification_email(user.email, code)
+                send_verification_email_task.delay(user.email, code)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
             return Response(
                 {
@@ -442,7 +435,7 @@ class GoogleTokenView(APIView):
             if created:
                 # UserProfile will be created automatically by the signal
                 code = store_verification_code(user.email)
-                send_verification_email(user.email, code)
+                send_verification_email_task.delay(user.email, code)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
             return Response(
                 {

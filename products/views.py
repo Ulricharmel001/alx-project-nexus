@@ -271,7 +271,14 @@ class PurchaseViewSet(viewsets.ModelViewSet):
         if not all(data.get(f) for f in required_fields):
             return Response({"error": "Missing required fields"}, status=400)
 
-        order = get_object_or_404(Order, id=data["order_id"], customer=request.user)
+        order = get_object_or_404(Order, id=data["order_id"])
+
+        # For authenticated users, verify ownership; for guests, skip
+        if request.user.is_authenticated:
+            if order.customer != request.user:
+                return Response({"error": "Order not found"}, status=404)
+        elif not order.guest_email:
+            return Response({"error": "Order not found"}, status=404)
 
         if order.status == "paid":
             return Response({"error": "Order already paid"}, status=400)
@@ -300,7 +307,7 @@ class PurchaseViewSet(viewsets.ModelViewSet):
             currency="ETB",
             status="pending",
             transaction_reference=tx_ref,
-            created_by=request.user,
+            created_by=request.user if request.user.is_authenticated else None,
         )
 
         return Response(
@@ -333,11 +340,14 @@ class PurchaseViewSet(viewsets.ModelViewSet):
             404: "Purchase not found",
         },
     )
-    @action(detail=False, methods=["get"], url_path="verify/(?P<tx_ref>[^/.]+)")
+    @action(
+        detail=False,
+        methods=["get"],
+        url_path="verify/(?P<tx_ref>[^/.]+)",
+        permission_classes=[AllowAny],
+    )
     def verify_payment(self, request, tx_ref):
-        purchase = get_object_or_404(
-            Purchase, transaction_reference=tx_ref, created_by=request.user
-        )
+        purchase = get_object_or_404(Purchase, transaction_reference=tx_ref)
 
         chapa = ChapaService()
         response = chapa.verify_payment(tx_ref)
@@ -369,7 +379,9 @@ class PurchaseViewSet(viewsets.ModelViewSet):
                 defaults={
                     "is_verified": True,
                     "verification_details": response["data"],
-                    "created_by": request.user,
+                    "created_by": request.user
+                    if request.user.is_authenticated
+                    else None,
                 },
             )
             generate_and_send_receipt_email.delay(str(purchase.id))

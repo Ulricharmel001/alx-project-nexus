@@ -61,7 +61,11 @@ class Product(BaseModel):
 # Address model needed for orders
 class Address(BaseModel):
     customer = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name="addresses"
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="addresses",
+        null=True,
+        blank=True,
     )
     street = models.CharField(max_length=255)
     city = models.CharField(max_length=100, db_index=True)
@@ -99,8 +103,15 @@ class Order(BaseModel):
         ("cancelled", "Cancelled"),
     ]
     customer = models.ForeignKey(
-        CustomUser, on_delete=models.CASCADE, related_name="orders"
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name="orders",
+        null=True,
+        blank=True,
     )
+    guest_email = models.EmailField(null=True, blank=True)
+    guest_first_name = models.CharField(max_length=30, null=True, blank=True)
+    guest_last_name = models.CharField(max_length=30, null=True, blank=True)
     shipping_address = models.ForeignKey(Address, on_delete=models.PROTECT)
     status = models.CharField(max_length=20, choices=ORDER_STATUS, default="pending")
     total_price = models.DecimalField(max_digits=12, decimal_places=2)

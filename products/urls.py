@@ -41,6 +41,8 @@ urlpatterns = [
         name="update-cart-item",
     ),
     path("cart/clear/", cart_service.clear_cart, name="clear-cart"),
+    # Guest checkout (no auth required)
+    path("checkout/guest/", cart_service.guest_checkout, name="guest-checkout"),
     # Addresses
     path("addresses/", views.AddressListView.as_view(), name="address-list"),
     path(

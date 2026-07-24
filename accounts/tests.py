@@ -117,9 +117,8 @@ class RegistrationTests(APITestCase):
     def setUp(self):
         self.url = reverse("accounts:register")
 
-    @patch("accounts.views.send_verification_email")
-    def test_registration_success(self, mock_send):
-        mock_send.return_value = (True, "Email queued")
+    @patch("accounts.views.send_verification_email_task.delay")
+    def test_registration_success(self, mock_delay):
         data = {
             "email": "newuser@example.com",
             "first_name": "New",
@@ -133,7 +132,7 @@ class RegistrationTests(APITestCase):
         self.assertIn("refresh", response.data)
         self.assertEqual(response.data["email_verification_required"], True)
         self.assertTrue(User.objects.filter(email="newuser@example.com").exists())
-        mock_send.assert_called_once()
+        mock_delay.assert_called_once()
 
     def test_registration_duplicate_email(self):
         User.objects.create_user(
@@ -477,9 +476,8 @@ class EmailVerificationTests(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
 
-    @patch("accounts.views.send_verification_email")
-    def test_resend_verification_success(self, mock_send):
-        mock_send.return_value = (True, "Email queued")
+    @patch("accounts.views.send_verification_email_task.delay")
+    def test_resend_verification_success(self, mock_delay):
         VERIFICATION_CODES.pop("verify@example.com", None)
         response = self.client.post(
             self.resend_url, {"email": "verify@example.com"}, format="json"
