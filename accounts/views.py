@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from drf_yasg import openapi
@@ -358,6 +359,11 @@ class GoogleCallbackView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
         code = request.query_params.get("code")
+        if code:
+            frontend_url = settings.FRONTEND_URL
+            callback_path = "/auth/google/callback"
+            redirect_url = f"{frontend_url}{callback_path}?code={code}"
+            return redirect(redirect_url)
         return self._handle_code(code, request)
 
     def post(self, request):

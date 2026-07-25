@@ -42,6 +42,9 @@ GOOGLE_OAUTH2_CLIENT_SECRET = os.getenv("GOOGLE_OAUTH2_CLIENT_SECRET")
 GOOGLE_OAUTH2_REDIRECT_URI = os.getenv("GOOGLE_OAUTH2_REDIRECT_URI")
 GOOGLE_OAUTH2_SCOPE = os.getenv("GOOGLE_OAUTH2_SCOPE")
 
+# Frontend URL (for redirects)
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:3000")
+
 # Applications
 INSTALLED_APPS = [
     "corsheaders",
