@@ -41,7 +41,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
             "order",
             "created_at",
         ]
-        read_only_fields = ["id", "created_at"]
+        read_only_fields = ["id", "product", "created_at"]
 
 
 # PRODUCT
