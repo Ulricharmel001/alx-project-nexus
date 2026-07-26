@@ -7,7 +7,7 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
-from rest_framework import filters, generics, viewsets
+from rest_framework import filters, generics, parsers, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
@@ -121,6 +121,7 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
 class ProductImageListCreateView(generics.ListCreateAPIView):
     serializer_class = ProductImageSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def get_queryset(self):
         return ProductImage.objects.filter(product_id=self.kwargs["product_pk"])
@@ -133,6 +134,7 @@ class ProductImageListCreateView(generics.ListCreateAPIView):
 class ProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ProductImageSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
 
     def get_queryset(self):
         return ProductImage.objects.filter(product_id=self.kwargs["product_pk"])

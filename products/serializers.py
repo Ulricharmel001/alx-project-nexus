@@ -32,18 +32,39 @@ class CategorySerializer(serializers.ModelSerializer):
 
 # PRODUCT IMAGE
 class ProductImageSerializer(serializers.ModelSerializer):
+    image = serializers.ImageField(write_only=True, required=False)
+    image_url = serializers.URLField(read_only=True)
+
     class Meta:
         model = ProductImage
         fields = [
             "id",
             "product",
             "image_url",
+            "image",
             "alt_text",
             "is_primary",
             "order",
             "created_at",
         ]
-        read_only_fields = ["id", "product", "created_at"]
+        read_only_fields = ["id", "product", "image_url", "created_at"]
+
+    def create(self, validated_data):
+        image_file = validated_data.pop("image", None)
+        instance = ProductImage.objects.create(**validated_data)
+        if image_file:
+            instance.image = image_file
+            instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        image_file = validated_data.pop("image", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if image_file:
+            instance.image = image_file
+        instance.save()
+        return instance
 
 
 # PRODUCT
