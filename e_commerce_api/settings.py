@@ -149,7 +149,7 @@ EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD")
 EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", 10))
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL")
 SERVER_EMAIL = os.getenv("SERVER_EMAIL")
-SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL")
+SUPPORT_EMAIL = os.getenv("SUPPORT_EMAIL") or "support@nexus.com"
 
 # Cache / Redis
 CACHE_URL = os.getenv("CACHE_URL")
