@@ -3,27 +3,38 @@ import logging
 from celery import shared_task
 from django.conf import settings
 from django.core.mail import send_mail
+from django.core.signing import TimestampSigner
 
 logger = logging.getLogger(__name__)
+signer = TimestampSigner()
 
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=60)
 def send_verification_email_task(self, email, code):
     try:
-        # Send email via SMTP (runs in background worker)
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        token = signer.sign(email)
+        verify_link = f"{frontend_url}/verify-email/link?token={token}"
+
         send_mail(
-            subject="Email Verification Code",
+            subject="Verify your email — Nexus",
             message=f"""
 Hello,
 
-Your email verification code is: {code}
+Welcome to Nexus! Please verify your email address.
 
-This code will expire in 5 minutes.
+Option 1: Click the link below to verify instantly:
+{verify_link}
 
-If you didn't request this, please ignore this email.
+Option 2: Enter the 6-digit code on the verification page:
+Code: {code}
+
+This code and link will expire in 5 minutes.
+
+If you didn't create an account, please ignore this email.
 
 Best regards,
-Ulrich E-Commerce Team
+Nexus Team
         """,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=[email],
@@ -55,13 +66,15 @@ def send_password_reset_email_task(self, user_email, user_first_name, reset_toke
             message=f"""
 Hello {user_first_name},
 
-We received a request to reset your password. Click the link below to create a new password:
+We received a request to reset your password.
+Click the link below to create a new password:
 
 {reset_link}
 
 This link will expire in 1 hour.
 
-If you didn't request this, please ignore this email and your password will remain unchanged.
+If you didn't request this, please ignore this email.
+Your password will remain unchanged.
 
 Best regards,
 Ulrich E-Commerce Team

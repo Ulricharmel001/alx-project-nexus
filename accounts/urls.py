@@ -25,6 +25,11 @@ urlpatterns = [
     ),
     path("email/verify/", views.EmailVerificationView.as_view(), name="email-verify"),
     path(
+        "email/verify/link/",
+        views.EmailVerifyLinkView.as_view(),
+        name="email-verify-link",
+    ),
+    path(
         "email/resend/",
         views.ResendVerificationEmailView.as_view(),
         name="email-resend",

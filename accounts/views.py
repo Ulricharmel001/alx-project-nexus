@@ -11,6 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from django.core.signing import TimestampSigner
 from .email_utils import (can_resend_code, send_verification_email,
                           send_welcome_email, store_verification_code,
                           verify_code)
@@ -293,6 +294,29 @@ class EmailVerificationView(APIView):
             else:
                 return Response({"error": message}, status=status.HTTP_400_BAD_REQUEST)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class EmailVerifyLinkView(APIView):
+    """Verify email via signed link"""
+
+    permission_classes = [AllowAny]
+
+    def get(self, request):
+        token = request.query_params.get("token")
+        if not token:
+            return Response({"error": "Token is required"}, status=400)
+        signer = TimestampSigner()
+        try:
+            email = signer.unsign(token, max_age=300)
+            user = CustomUser.objects.get(email=email)
+            send_welcome_email(user.email, user.first_name)
+            serializer = UserDetailSerializer(user)
+            return Response(
+                {"message": "Email verified successfully", "user": serializer.data},
+                status=200,
+            )
+        except Exception:
+            return Response({"error": "Invalid or expired token"}, status=400)
 
 
 class ResendVerificationEmailView(APIView):

@@ -86,131 +86,39 @@ def can_resend_code(email):
     return True, 0
 
 
-def _send_verification_email_sync(email, code):
-    import smtplib
-    from email.mime.text import MIMEText
-
-    from django.conf import settings
-
-    msg = MIMEText(
-        "\n".join(
-            [
-                "Hello,",
-                "",
-                f"Your email verification code is: {code}",
-                "",
-                "This code will expire in 5 minutes.",
-                "",
-                "If you didn't request this, please ignore this email.",
-                "",
-                "Best regards,",
-                "Ulrich E-Commerce Team",
-            ]
-        )
-    )
-    msg["Subject"] = "Email Verification Code"
-    msg["From"] = settings.DEFAULT_FROM_EMAIL
-    msg["To"] = email
-
-    server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=15)
-    server.ehlo()
-    server.starttls()
-    server.ehlo()
-    server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
-    server.sendmail(settings.DEFAULT_FROM_EMAIL, [email], msg.as_string())
-    server.quit()
-    logger.info(f"Verification email sent to {email}")
-
-
 def send_verification_email(email, code):
+    from .tasks import send_verification_email_task
+
     try:
-        t = threading.Thread(
-            target=_send_verification_email_sync, args=(email, code), daemon=True
-        )
-        t.start()
-        logger.info(f"Verification email thread started for {email}")
+        send_verification_email_task.delay(email, code)
+        logger.info(f"Verification email queued for {email}")
         return True, "Verification email sent"
     except Exception as e:
-        logger.error(f"Failed to start verification email thread: {str(e)}")
+        logger.error(f"Failed to queue verification email: {str(e)}")
         return False, f"Failed to send verification email: {str(e)}"
 
 
-def _send_password_reset_sync(user, reset_token, uid):
-    from django.conf import settings
-    from django.core.mail import send_mail
-
-    frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
-    reset_link = f"{frontend_url}/reset-password?uid={uid}&token={reset_token}"
-
-    send_mail(
-        subject="Password Reset Request",
-        message=f"""
-Hello {user.first_name or 'User'},
-
-We received a request to reset your password.
-Click the link below to create a new password:
-
-{reset_link}
-
-This link will expire in 1 hour.
-
-If you didn't request this, please ignore this email.
-Your password will remain unchanged.
-
-Best regards,
-Ulrich E-Commerce Team
-        """,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[user.email],
-        fail_silently=False,
-    )
-    logger.info(f"Password reset email sent to {user.email}")
-
-
 def send_password_reset_email(user, reset_token, uid):
+    from .tasks import send_password_reset_email_task
+
     try:
-        t = threading.Thread(
-            target=_send_password_reset_sync, args=(user, reset_token, uid), daemon=True
+        send_password_reset_email_task.delay(
+            user.email, user.first_name, reset_token, uid
         )
-        t.start()
-        logger.info(f"Password reset email thread started for {user.email}")
+        logger.info(f"Password reset email queued for {user.email}")
         return True, "Password reset email sent successfully"
     except Exception as e:
-        logger.error(f"Failed to start password reset email thread: {str(e)}")
+        logger.error(f"Failed to queue password reset email: {str(e)}")
         return False, f"Failed to send password reset email: {str(e)}"
 
 
-def _send_welcome_sync(email, first_name):
-    from django.conf import settings
-    from django.core.mail import send_mail
-
-    send_mail(
-        subject="Welcome to Your Best shop!",
-        message=f"""
-Hello {first_name},
-
-Welcome to our E-commerce shop! We're excited to have you on board.
-
-Your account is now active and ready to use.
-
-Best regards,
-Ulrich - alx-project nexus
-        """,
-        from_email=settings.DEFAULT_FROM_EMAIL,
-        recipient_list=[email],
-        fail_silently=False,
-    )
-    logger.info(f"Welcome email sent to {email}")
-
-
 def send_welcome_email(email, first_name):
+    from .tasks import send_welcome_email_task
+
     try:
-        t = threading.Thread(
-            target=_send_welcome_sync, args=(email, first_name), daemon=True
-        )
-        t.start()
-        logger.info(f"Welcome email thread started for {email}")
+        send_welcome_email_task.delay(email, first_name)
+        logger.info(f"Welcome email queued for {email}")
         return True, "Welcome email sent successfully"
     except Exception as e:
-        logger.error(f"Failed to start welcome email thread: {str(e)}")
+        logger.error(f"Failed to queue welcome email: {str(e)}")
         return False, f"Failed to send welcome email: {str(e)}"
