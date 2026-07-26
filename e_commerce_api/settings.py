@@ -100,7 +100,7 @@ TEMPLATES = [
 ]
 
 # Database
-_database_url = os.getenv("DATABASE_URL") or "sqlite:///build_db.sqlite3"
+_database_url = os.getenv("DATABASE_URL") or "sqlite:///" + str(BASE_DIR / "build_db.sqlite3")
 DATABASES = {
     "default": dj_database_url.parse(
         _database_url,
