@@ -8,6 +8,7 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, generics, parsers, viewsets
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
@@ -130,6 +131,8 @@ class ProductImageListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         product = get_object_or_404(Product, pk=self.kwargs["product_pk"])
+        if product.images.count() >= 10:
+            raise DRFValidationError("Maximum of 10 images per product")
         serializer.save(product=product)
 
 

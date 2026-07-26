@@ -51,7 +51,9 @@ class CategorySerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if instance.banner:
-            data["banner_image"] = instance.banner.url
+            request = self.context.get("request")
+            url = instance.banner.url
+            data["banner_image"] = request.build_absolute_uri(url) if request else url
         return data
 
 
@@ -94,7 +96,9 @@ class ProductImageSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         if instance.image and not instance.image_url:
-            data["image_url"] = instance.image.url
+            request = self.context.get("request")
+            url = instance.image.url
+            data["image_url"] = request.build_absolute_uri(url) if request else url
         return data
 
 
