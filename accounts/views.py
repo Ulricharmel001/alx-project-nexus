@@ -10,8 +10,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from .email_utils import (can_resend_code, send_welcome_email,
-                          store_verification_code, verify_code)
+from .email_utils import (can_resend_code, send_verification_email,
+                          send_welcome_email, store_verification_code,
+                          verify_code)
 from .models import CustomUser, UserProfile
 from .serializers import (ChangePasswordSerializer,
                           EmailVerificationSerializer, LoginSerializer,
@@ -20,7 +21,6 @@ from .serializers import (ChangePasswordSerializer,
                           RegistrationSerializer,
                           ResendVerificationEmailSerializer,
                           UserDetailSerializer, UserProfileSerializer)
-from .tasks import send_verification_email_task
 
 
 class RegistrationView(APIView):
@@ -77,8 +77,7 @@ class RegistrationView(APIView):
             # Generate 6-digit verification code (stored in memory)
             code = store_verification_code(user.email)
 
-            # Queue email send via Celery (returns immediately, email sent async)
-            send_verification_email_task.delay(user.email, code)
+            send_verification_email(user.email, code)
 
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
@@ -315,8 +314,7 @@ class ResendVerificationEmailView(APIView):
                 # Generate new 6-digit code
                 code = store_verification_code(email)
 
-                # Queue email send via Celery (returns immediately, email sent async)
-                send_verification_email_task.delay(email, code)
+                send_verification_email(email, code)
                 return Response(
                     {
                         "message": "Verification email sent",
@@ -398,9 +396,8 @@ class GoogleCallbackView(APIView):
                 )
             user, created = GoogleAuthHandler.get_or_create_user(google_user_data)
             if created:
-                # UserProfile will be created automatically by the signal
                 code = store_verification_code(user.email)
-                send_verification_email_task.delay(user.email, code)
+                send_verification_email(user.email, code)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
             return Response(
                 {
@@ -439,9 +436,8 @@ class GoogleTokenView(APIView):
                 )
             user, created = GoogleAuthHandler.get_or_create_user(google_user_data)
             if created:
-                # UserProfile will be created automatically by the signal
                 code = store_verification_code(user.email)
-                send_verification_email_task.delay(user.email, code)
+                send_verification_email(user.email, code)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
             return Response(
                 {

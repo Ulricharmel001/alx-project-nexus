@@ -130,31 +130,68 @@ def send_verification_email(email, code):
 
 def send_password_reset_email(user, reset_token, uid):
     try:
-        from accounts.tasks import send_password_reset_email_task
+        from django.conf import settings
+        from django.core.mail import send_mail
 
-        task = send_password_reset_email_task.delay(
-            user.email, user.first_name or "User", reset_token, uid
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        reset_link = f"{frontend_url}/reset-password?uid={uid}&token={reset_token}"
+
+        send_mail(
+            subject="Password Reset Request",
+            message=f"""
+Hello {user.first_name or 'User'},
+
+We received a request to reset your password.
+Click the link below to create a new password:
+
+{reset_link}
+
+This link will expire in 1 hour.
+
+If you didn't request this, please ignore this email.
+Your password will remain unchanged.
+
+Best regards,
+Ulrich E-Commerce Team
+        """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user.email],
+            fail_silently=False,
         )
 
-        logger.info(
-            f"Password reset email queued for {user.email} (Task ID: {task.id})"
-        )
-        return True, "Password reset email has been queued and will be sent shortly"
+        logger.info(f"Password reset email sent to {user.email}")
+        return True, "Password reset email sent successfully"
 
     except Exception as e:
-        logger.error(f"Failed to queue password reset email: {str(e)}")
-        return False, f"Failed to queue password reset email: {str(e)}"
+        logger.error(f"Failed to send password reset email: {str(e)}")
+        return False, f"Failed to send password reset email: {str(e)}"
 
 
 def send_welcome_email(email, first_name):
     try:
-        from accounts.tasks import send_welcome_email_task
+        from django.conf import settings
+        from django.core.mail import send_mail
 
-        task = send_welcome_email_task.delay(email, first_name)
+        send_mail(
+            subject="Welcome to Your Best shop!",
+            message=f"""
+Hello {first_name},
 
-        logger.info(f"Welcome email queued for {email} (Task ID: {task.id})")
-        return True, "Welcome email has been queued and will be sent shortly"
+Welcome to our E-commerce shop! We're excited to have you on board.
+
+Your account is now active and ready to use.
+
+Best regards,
+Ulrich - alx-project nexus
+        """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+
+        logger.info(f"Welcome email sent to {email}")
+        return True, "Welcome email sent successfully"
 
     except Exception as e:
-        logger.error(f"Failed to queue welcome email: {str(e)}")
-        return False, f"Failed to queue welcome email: {str(e)}"
+        logger.error(f"Failed to send welcome email: {str(e)}")
+        return False, f"Failed to send welcome email: {str(e)}"

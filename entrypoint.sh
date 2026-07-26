@@ -7,9 +7,6 @@ python manage.py migrate --noinput
 echo "Collecting static files..."
 python manage.py collectstatic --noinput
 
-echo "Starting Celery worker..."
-nohup celery -A e_commerce_api worker -l info -c 1 -Q email,default &
-
 echo "Starting Gunicorn..."
 exec gunicorn e_commerce_api.wsgi:application \
     --bind 0.0.0.0:${PORT:-8000} \
