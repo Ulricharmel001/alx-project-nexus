@@ -10,9 +10,17 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # Core
-SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("DJANGO_SECRET_KEY") or "build-time-insecure-key"
+SECRET_KEY = (
+    os.getenv("SECRET_KEY")
+    or os.getenv("DJANGO_SECRET_KEY")
+    or "build-time-insecure-key"
+)
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
-ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
+ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h] or [
+    ".onrender.com",
+    "localhost",
+    "127.0.0.1",
+]
 
 # Security
 CSRF_TRUSTED_ORIGINS = [
@@ -100,7 +108,9 @@ TEMPLATES = [
 ]
 
 # Database
-_database_url = os.getenv("DATABASE_URL") or "sqlite:///" + str(BASE_DIR / "build_db.sqlite3")
+_database_url = os.getenv("DATABASE_URL") or "sqlite:///" + str(
+    BASE_DIR / "build_db.sqlite3"
+)
 DATABASES = {
     "default": dj_database_url.parse(
         _database_url,
