@@ -1,8 +1,6 @@
 import os
 
 from celery import Celery
-from celery.schedules import crontab
-from django.conf import settings
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "e_commerce_api.settings")
 
@@ -12,15 +10,11 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 
 app.autodiscover_tasks()
 
-app.conf.beat_schedule = {}
-
 app.conf.update(
     task_routes={
         "accounts.tasks.*": {"queue": "email"},
         "products.tasks.*": {"queue": "default"},
     },
-    result_backend=settings.CELERY_RESULT_BACKEND,
-    broker_url=settings.CELERY_BROKER_URL,
     task_serializer="json",
     result_serializer="json",
     accept_content=["json"],

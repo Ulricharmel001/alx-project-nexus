@@ -10,7 +10,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
 # Core
-SECRET_KEY = os.getenv("SECRET_KEY")
+SECRET_KEY = os.getenv("SECRET_KEY") or os.getenv("DJANGO_SECRET_KEY") or "build-time-insecure-key"
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 ALLOWED_HOSTS = [h for h in os.getenv("ALLOWED_HOSTS", "").split(",") if h]
 
@@ -100,9 +100,10 @@ TEMPLATES = [
 ]
 
 # Database
+_database_url = os.getenv("DATABASE_URL") or "sqlite:///build_db.sqlite3"
 DATABASES = {
     "default": dj_database_url.parse(
-        os.getenv("DATABASE_URL"),
+        _database_url,
         conn_max_age=600,
         conn_health_checks=True,
     )
