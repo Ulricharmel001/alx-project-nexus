@@ -1,161 +1,120 @@
-# Ignore node modules and log files
 
-#node modules
-node_modules/
-#logs
-logs
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Ignore environment variable files
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-graph-env.json
-graph-env
-
-# Ignore build output
-dist/
-build/
-# Ignore temporary files
-*.tmp
-*.temp
-*.swp
-.DS_Store
-Thumbs.db
-
-# Ignore IDE specific files
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
-# Ignore coverage reports
-coverage/
-.nyc_output/
-
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-# Ignore database files
-*.sqlite3
-db.sqlite3
-
-# Ignore compiled files
-*.class
-*.jar
-*.war
-*.ear
-# Ignore package files
-*.zip
-*.tar.gz
-*.rar
 *.7z
-
-#ignore .env files
-.env.*
-.env.local.*
-.env.development.*
-.env.test.*
-.env.production.*
-
-# Ignore system files
-*.bak
-*.tmp
-*.swp
-*.orig
-*.swo
-*.pid
-*.seed
-*.pid.lock
-
-
-# Ignore Python specific files (setting.py, etc.)
-
-config.py
-config.json
-
-scripts/
-
-# env files
-nexus-env.json
-nexus-env
-nexus-env.local
-nexus-env.development.local
-nexus-env.test.local
-nexus-env.production.local
-
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
-backup/
+accounts/tests.py
+ADMINER_SETUP.sh
+API_ENDPOINTS_WORKING.md
 *.backup
+backup/
 backup.json
+*.bak
+build/
+CELERY_*.md
+*.class
+config.json
+config.py
+coverage/
+data_seeder.py
+db.sqlite3
+DEPLOYMENT_GUIDE.md
+dist/
+# Documentation and test files
+.DS_Store
+*.ear
 ecommerce_backup.sql
-
-# Ignore test coverage files
-htmlcov/
-.tox/
-
-/*__pycache__*/
-*.pyc
-*.pyo
-*.pyd
-.Python
+.env
+.env.*
 env/
-
-../venv/
 ENV/
 env.bak/
-venv.bak/
+.env.development.*
+.env.development.local
+# env files
+.env.local
+.env.local.*
+.env.production.*
+.env.production.local
+.env.test.*
+.env.test.local
+Frontend/
+graph-env
+graph-env.json
+htmlcov/
+.idea/
+# Ignore build output
+# Ignore compiled files
+# Ignore coverage reports
+# Ignore database files
+#ignore .env files
+# Ignore environment variable files
+# Ignore IDE specific files
+# Ignore node modules and log files
+# Ignore package files
+# Ignore Python specific files (setting.py, etc.)
+# Ignore system files
+# Ignore temporary files
+# Ignore test coverage files
 ip_traacking/demo.py
 ip_traacking/demo.pyc
 ip_traacking/__pycache__/
 ip_tracking/demo.py
-
-data_seeder.py
-
+*.jar
 # Local test & experimental files
-accounts/tests.py
-products/tests.py
-test_receipt_task.py
+*.log
+#logs
+logs
+nexus-env
+nexus-env.development.local
+nexus-env.json
+nexus-env.local
+nexus-env.production.local
+nexus-env.test.local
+#node modules
+node_modules/
+npm-debug.log*
+.nyc_output/
+*.orig
 packages_backup.txt
-#test files
-test_email.py
-test_celery.py
-test_data_seeder.py
-tests.py
-test_*.py
-test_receipt_task.py
-secret
-
-# Documentation and test files
-API_ENDPOINTS_WORKING.md
-DEPLOYMENT_GUIDE.md
+*.pid
+*.pid.lock
+POSTGRESQL_TROUBLESHOOTING.md
 POSTMAN_TEST_GUIDE.md
+products/tests.py
+*.pyc
+/*__pycache__*/
+__pycache__/
+*.pyd
+*.pyo
+.Python
+QUICK_REFERENCE.txt
+*.rar
+scripts/
+secret
+*.seed
+*.sqlite3
+staticfiles/
+*.sublime-project
+*.sublime-workspace
+*.swo
+*.swp
+*.tar.gz
+*.temp
 TEST_ALL_ENDPOINTS.sh
 test_api.sh
-QUICK_REFERENCE.txt
-POSTGRESQL_TROUBLESHOOTING.md
-ADMINER_SETUP.sh
-CELERY_*.md
-staticfiles/
+test_celery.py
+test_data_seeder.py
+test_email.py
+#test files
+test_*.py
+test_receipt_task.py
+tests.py
+Thumbs.db
+*.tmp
+.tox/
+../venv/
+venv/
+venv.bak/
+.vscode/
+*.war
+yarn-debug.log*
+yarn-error.log*
+*.zip
