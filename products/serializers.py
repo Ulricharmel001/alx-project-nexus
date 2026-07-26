@@ -33,7 +33,7 @@ class CategorySerializer(serializers.ModelSerializer):
 # PRODUCT IMAGE
 class ProductImageSerializer(serializers.ModelSerializer):
     image = serializers.ImageField(write_only=True, required=False)
-    image_url = serializers.URLField(read_only=True)
+    image_url = serializers.URLField(required=False, allow_blank=True)
 
     class Meta:
         model = ProductImage
@@ -47,7 +47,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
             "order",
             "created_at",
         ]
-        read_only_fields = ["id", "product", "image_url", "created_at"]
+        read_only_fields = ["id", "product", "created_at"]
 
     def create(self, validated_data):
         image_file = validated_data.pop("image", None)
@@ -65,6 +65,12 @@ class ProductImageSerializer(serializers.ModelSerializer):
             instance.image = image_file
         instance.save()
         return instance
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.image and not instance.image_url:
+            data["image_url"] = instance.image.url
+        return data
 
 
 # PRODUCT
