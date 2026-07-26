@@ -39,6 +39,7 @@ urlpatterns = [
     path("", RedirectView.as_view(url="/swagger/", permanent=False)),
 ]
 
-if settings.DEBUG:
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+from django.views.static import serve as static_serve
+
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+urlpatterns += [path(f"media/<path:path>", static_serve, {"document_root": settings.MEDIA_ROOT})]
