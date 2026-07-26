@@ -75,6 +75,8 @@ urlpatterns = [
     ),
     # Payment test
     path("payment-test/", cart_service.initiate_payment_test, name="payment-test"),
+    # Admin dashboard
+    path("admin/dashboard/", views.admin_dashboard_stats, name="admin-dashboard"),
     # ViewSets LAST
     path("", include(router.urls)),
 ]

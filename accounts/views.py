@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.db.models import Count, Q
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
@@ -413,6 +414,54 @@ class GoogleCallbackView(APIView):
                 {"error": f"Authentication failed: {str(e)}"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+
+# --- Admin User Management ---
+
+
+class AdminUserListView(APIView):
+    """List all users for admin management. Staff only."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if not request.user.is_staff:
+            return Response({"error": "Admin access required"}, status=403)
+        users = CustomUser.objects.all().order_by("-date_joined")
+        serializer = UserDetailSerializer(users, many=True)
+        return Response(serializer.data, status=200)
+
+    def patch(self, request, user_id):
+        if not request.user.is_staff:
+            return Response({"error": "Admin access required"}, status=403)
+        try:
+            user = CustomUser.objects.get(id=user_id)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
+        is_active = request.data.get("is_active")
+        role = request.data.get("role")
+        if is_active is not None:
+            user.is_active = is_active
+        if role is not None:
+            user.role = role
+        user.save()
+        return Response(UserDetailSerializer(user).data, status=200)
+
+
+class AdminUserDeleteView(APIView):
+    """Delete a user. Staff only."""
+
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, user_id):
+        if not request.user.is_staff:
+            return Response({"error": "Admin access required"}, status=403)
+        try:
+            user = CustomUser.objects.get(id=user_id)
+            user.delete()
+            return Response({"message": "User deleted"}, status=200)
+        except CustomUser.DoesNotExist:
+            return Response({"error": "User not found"}, status=404)
 
 
 class GoogleTokenView(APIView):

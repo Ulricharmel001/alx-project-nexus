@@ -13,6 +13,8 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
+from accounts.models import CustomUser
+
 from .chapa_service import ChapaService
 from .models import (Address, Category, Inventory, Order, Product,
                      ProductImage, Purchase, PurchaseVerification, Review)
@@ -499,3 +501,42 @@ class InventoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
     permission_classes = [IsAuthenticated]
+
+
+# --- Admin Dashboard ---
+
+
+@swagger_auto_schema(
+    method="get",
+    operation_summary="Admin dashboard stats",
+    operation_description="Get aggregate counts for the admin dashboard. Staff only.",
+    responses={200: "Dashboard stats"},
+)
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def admin_dashboard_stats(request):
+    if not request.user.is_staff:
+        return Response({"error": "Admin access required"}, status=403)
+    total_products = Product.objects.count()
+    total_categories = Category.objects.count()
+    total_users = CustomUser.objects.count()
+    total_orders = Order.objects.count()
+    total_revenue = (
+        Purchase.objects.filter(status="completed").aggregate(
+            total=models.Sum("amount")
+        )["total"]
+        or 0
+    )
+    pending_orders = Order.objects.filter(status="pending").count()
+    low_stock = Inventory.objects.filter(quantity__lte=10).count()
+    return Response(
+        {
+            "total_products": total_products,
+            "total_categories": total_categories,
+            "total_users": total_users,
+            "total_orders": total_orders,
+            "total_revenue": total_revenue,
+            "pending_orders": pending_orders,
+            "low_stock": low_stock,
+        }
+    )

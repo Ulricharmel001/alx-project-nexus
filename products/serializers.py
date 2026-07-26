@@ -19,6 +19,8 @@ class CategorySerializer(serializers.ModelSerializer):
             "name",
             "parent",
             "children",
+            "banner_image",
+            "description",
             "created_at",
             "updated_at",
         ]

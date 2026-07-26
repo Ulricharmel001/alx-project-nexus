@@ -34,4 +34,16 @@ urlpatterns = [
         "google/callback/", views.GoogleCallbackView.as_view(), name="google-callback"
     ),
     path("google/token/", views.GoogleTokenView.as_view(), name="google-token"),
+    # Admin
+    path("admin/users/", views.AdminUserListView.as_view(), name="admin-users"),
+    path(
+        "admin/users/<uuid:user_id>/",
+        views.AdminUserListView.as_view(),
+        name="admin-user-detail",
+    ),
+    path(
+        "admin/users/<uuid:user_id>/delete/",
+        views.AdminUserDeleteView.as_view(),
+        name="admin-user-delete",
+    ),
 ]

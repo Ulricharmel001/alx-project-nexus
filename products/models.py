@@ -37,6 +37,8 @@ class Category(BaseModel):
     parent = models.ForeignKey(
         "self", null=True, blank=True, related_name="children", on_delete=models.CASCADE
     )
+    banner_image = models.URLField(max_length=2048, blank=True, default="")
+    description = models.TextField(blank=True, default="")
 
     class Meta:
         ordering = ("created_at",)
