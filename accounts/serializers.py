@@ -86,6 +86,7 @@ class UserDetailSerializer(serializers.ModelSerializer):
             "first_name",
             "last_name",
             "role",
+            "is_staff",
             "is_active",
             "date_joined",
             "profile",
@@ -123,7 +124,7 @@ class ChangePasswordSerializer(serializers.Serializer):
             )
         if data.get("old_password") == data["new_password"]:
             raise serializers.ValidationError(
-                {"new_password": "New password must differ from old password."}
+                {"new_password": "New password must differ from old password."}  # pragma: allowlist secret
             )
         return data
 
@@ -141,6 +142,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
     - Generates reset token
     - Queues password reset email via Celery
     """
+
     email = serializers.EmailField()
 
     def validate_email(self, value):
@@ -148,27 +150,28 @@ class PasswordResetRequestSerializer(serializers.Serializer):
         if not CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError("User with this email does not exist.")
         return value
-    
+
     def save(self):
         """
         Generate reset token and queue email via Celery
         Called after validation passes
         """
-        from django.utils.http import urlsafe_base64_encode
-        from django.utils.encoding import force_bytes
         from django.contrib.auth.tokens import default_token_generator
+        from django.utils.encoding import force_bytes
+        from django.utils.http import urlsafe_base64_encode
+
         from accounts.email_utils import send_password_reset_email
-        
-        email = self.validated_data['email']
+
+        email = self.validated_data["email"]
         user = CustomUser.objects.get(email=email)
-        
+
         # Generate reset token and UID
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         reset_token = default_token_generator.make_token(user)
-        
+
         # Queue password reset email via Celery (async, non-blocking)
         send_password_reset_email(user, reset_token, uid)
-        
+
         return user
 
 
@@ -217,16 +220,17 @@ class GoogleCallbackSerializer(serializers.Serializer):
 
 class EmailVerificationSerializer(serializers.Serializer):
     """Serializer for email verification with code"""
+
     email = serializers.EmailField()
     code = serializers.CharField(max_length=6)
 
 
 class ResendVerificationEmailSerializer(serializers.Serializer):
     """Serializer for resending verification email"""
+
     email = serializers.EmailField()
-    
+
     def validate_email(self, value):
         if not CustomUser.objects.filter(email=value).exists():
             raise serializers.ValidationError("User with this email does not exist.")
         return value
-
