@@ -1,10 +1,11 @@
 from decimal import Decimal
 
+from django.utils.text import slugify
 from rest_framework import serializers
 
 from .models import (Address, Cart, CartItem, Category, Inventory, Order,
-                     OrderItem, Product, Purchase, PurchaseVerification,
-                     Review)
+                     OrderItem, Product, ProductImage, Purchase,
+                     PurchaseVerification, Review)
 
 
 # CATEGORY
@@ -27,11 +28,28 @@ class CategorySerializer(serializers.ModelSerializer):
         return CategorySerializer(obj.children.all(), many=True).data
 
 
+# PRODUCT IMAGE
+class ProductImageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ProductImage
+        fields = [
+            "id",
+            "product",
+            "image_url",
+            "alt_text",
+            "is_primary",
+            "order",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
 # PRODUCT
 class ProductSerializer(serializers.ModelSerializer):
     categories = serializers.PrimaryKeyRelatedField(
         many=True, queryset=Category.objects.all()
     )
+    images = ProductImageSerializer(many=True, read_only=True)
 
     class Meta:
         model = Product
@@ -39,8 +57,11 @@ class ProductSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "description",
+            "slug",
             "price",
+            "currency",
             "categories",
+            "images",
             "is_active",
             "created_at",
             "updated_at",
@@ -51,6 +72,17 @@ class ProductSerializer(serializers.ModelSerializer):
         if value <= 0:
             raise serializers.ValidationError("Price must be greater than zero.")
         return value
+
+    def create(self, validated_data):
+        if not validated_data.get("slug"):
+            base = slugify(validated_data["name"])
+            slug = base
+            counter = 1
+            while Product.objects.filter(slug=slug).exists():
+                slug = f"{base}-{counter}"
+                counter += 1
+            validated_data["slug"] = slug
+        return super().create(validated_data)
 
 
 # ADDRESS

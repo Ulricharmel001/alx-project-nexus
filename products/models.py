@@ -58,6 +58,24 @@ class Product(BaseModel):
         return self.name
 
 
+class ProductImage(models.Model):
+    product = models.ForeignKey(
+        Product, on_delete=models.CASCADE, related_name="images"
+    )
+    image_url = models.URLField(max_length=2048, blank=True, default="")
+    image = models.ImageField(upload_to="products/", blank=True, null=True)
+    alt_text = models.CharField(max_length=255, blank=True, default="")
+    is_primary = models.BooleanField(default=False)
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["order", "created_at"]
+
+    def __str__(self):
+        return f"Image for {self.product.name}"
+
+
 # Address model needed for orders
 class Address(BaseModel):
     customer = models.ForeignKey(
@@ -90,7 +108,11 @@ class Inventory(BaseModel):
         return self.quantity - self.reserved_quantity
 
     def __str__(self):
-        return f"Inventory for {self.product.name} - Available: {self.available_quantity()}, Reserved: {self.reserved_quantity}"
+        return (
+            f"Inventory for {self.product.name} - "
+            f"Available: {self.available_quantity()}, "
+            f"Reserved: {self.reserved_quantity}"
+        )
 
 
 # order and orderItem
@@ -166,7 +188,10 @@ class PurchaseVerification(BaseModel):
     verification_details = models.JSONField(blank=True, null=True)
 
     def __str__(self):
-        return f"Verification for purchase {self.purchase.id} - Verified: {self.is_verified}"
+        return (
+            f"Verification for purchase {self.purchase.id} - "
+            f"Verified: {self.is_verified}"
+        )
 
 
 # Cart model

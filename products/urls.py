@@ -13,6 +13,17 @@ urlpatterns = [
     path("", views.ProductListView.as_view(), name="product-list"),
     path("<uuid:pk>/", views.ProductDetailView.as_view(), name="product-detail"),
     path("search/", views.product_search, name="product-search"),
+    # Product Images (nested under product)
+    path(
+        "<uuid:product_pk>/images/",
+        views.ProductImageListCreateView.as_view(),
+        name="product-image-list",
+    ),
+    path(
+        "<uuid:product_pk>/images/<uuid:pk>/",
+        views.ProductImageDetailView.as_view(),
+        name="product-image-detail",
+    ),
     # Categories
     path("categories/", views.CategoryListView.as_view(), name="categories-list"),
     path(

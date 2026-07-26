@@ -14,12 +14,13 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
 from rest_framework.response import Response
 
 from .chapa_service import ChapaService
-from .models import (Address, Category, Inventory, Order, Product, Purchase,
-                     PurchaseVerification, Review)
+from .models import (Address, Category, Inventory, Order, Product,
+                     ProductImage, Purchase, PurchaseVerification, Review)
 from .serializers import (AddressSerializer, CategorySerializer,
                           InventorySerializer, OrderSerializer,
-                          ProductSerializer, PurchaseSerializer,
-                          PurchaseVerificationSerializer, ReviewSerializer)
+                          ProductImageSerializer, ProductSerializer,
+                          PurchaseSerializer, PurchaseVerificationSerializer,
+                          ReviewSerializer)
 from .tasks import generate_and_send_receipt_email
 
 logger = logging.getLogger(__name__)
@@ -29,7 +30,10 @@ logger = logging.getLogger(__name__)
 
 @swagger_auto_schema(
     operation_summary="List all categories",
-    operation_description="Retrieve a list of all product categories. Supports filtering, searching, and ordering.",
+    operation_description=(
+        "Retrieve a list of all product categories. "
+        "Supports filtering, searching, and ordering."
+    ),
     responses={200: CategorySerializer(many=True)},
 )
 class CategoryListView(generics.ListCreateAPIView):
@@ -48,7 +52,9 @@ class CategoryListView(generics.ListCreateAPIView):
 
 @swagger_auto_schema(
     operation_summary="Get, update or delete a category",
-    operation_description="Retrieve, update or delete a specific product category by its UUID.",
+    operation_description=(
+        "Retrieve, update or delete a specific product category by its UUID."
+    ),
     responses={200: CategorySerializer, 404: "Category not found"},
 )
 class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -76,7 +82,10 @@ def category_tree(request):
 
 @swagger_auto_schema(
     operation_summary="List all products",
-    operation_description="Retrieve a list of all products. Supports filtering, searching, and ordering.",
+    operation_description=(
+        "Retrieve a list of all products. "
+        "Supports filtering, searching, and ordering."
+    ),
     responses={200: ProductSerializer(many=True)},
 )
 class ProductListView(generics.ListCreateAPIView):
@@ -102,6 +111,32 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+
+# --- Product Images ---
+
+
+class ProductImageListCreateView(generics.ListCreateAPIView):
+    serializer_class = ProductImageSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        return ProductImage.objects.filter(product_id=self.kwargs["product_pk"])
+
+    def perform_create(self, serializer):
+        product = get_object_or_404(Product, pk=self.kwargs["product_pk"])
+        serializer.save(product=product)
+
+
+class ProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
+    serializer_class = ProductImageSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def get_queryset(self):
+        return ProductImage.objects.filter(product_id=self.kwargs["product_pk"])
+
+
+# --- Product Search ---
 
 
 @swagger_auto_schema(
@@ -154,7 +189,9 @@ class AddressListView(generics.ListCreateAPIView):
 
 @swagger_auto_schema(
     operation_summary="Get, update or delete an address",
-    operation_description="Retrieve, update or delete a specific address for the authenticated user.",
+    operation_description=(
+        "Retrieve, update or delete a specific address " "for the authenticated user."
+    ),
     responses={200: AddressSerializer, 404: "Address not found"},
 )
 class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -170,7 +207,10 @@ class AddressDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 @swagger_auto_schema(
     operation_summary="List user orders",
-    operation_description="Retrieve a list of orders for the authenticated user. Staff users can see all orders.",
+    operation_description=(
+        "Retrieve a list of orders for the authenticated user. "
+        "Staff users can see all orders."
+    ),
     responses={200: OrderSerializer(many=True)},
 )
 class OrderListView(generics.ListCreateAPIView):
@@ -191,7 +231,10 @@ class OrderListView(generics.ListCreateAPIView):
 
 @swagger_auto_schema(
     operation_summary="Get, update or delete an order",
-    operation_description="Retrieve, update or delete a specific order for the authenticated user. Staff users can access all orders.",
+    operation_description=(
+        "Retrieve, update or delete a specific order for the "
+        "authenticated user. Staff users can access all orders."
+    ),
     responses={200: OrderSerializer, 404: "Order not found"},
 )
 class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -212,7 +255,10 @@ class OrderDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 @swagger_auto_schema(
     operation_summary="Manage purchases",
-    operation_description="Create, retrieve, update, or delete purchase records. Staff users can access all purchases.",
+    operation_description=(
+        "Create, retrieve, update, or delete purchase records. "
+        "Staff users can access all purchases."
+    ),
     responses={200: PurchaseSerializer(many=True)},
 )
 class PurchaseViewSet(viewsets.ModelViewSet):
@@ -229,7 +275,9 @@ class PurchaseViewSet(viewsets.ModelViewSet):
 
     @swagger_auto_schema(
         operation_summary="Create a new purchase",
-        operation_description="Initiate a payment for an order using Chapa payment gateway.",
+        operation_description=(
+            "Initiate a payment for an order using Chapa payment gateway."
+        ),
         request_body=openapi.Schema(
             type=openapi.TYPE_OBJECT,
             required=["order_id", "first_name", "last_name", "email"],
@@ -408,7 +456,9 @@ class ReviewListView(generics.ListCreateAPIView):
 
 @swagger_auto_schema(
     operation_summary="Get, update or delete a review",
-    operation_description="Retrieve, update or delete a specific product review by its UUID.",
+    operation_description=(
+        "Retrieve, update or delete a specific product review by its UUID."
+    ),
     responses={200: ReviewSerializer, 404: "Review not found"},
 )
 class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -422,7 +472,10 @@ class ReviewDetailView(generics.RetrieveUpdateDestroyAPIView):
 
 @swagger_auto_schema(
     operation_summary="List all inventory items",
-    operation_description="Retrieve a list of all inventory items. Available to authenticated users only.",
+    operation_description=(
+        "Retrieve a list of all inventory items. "
+        "Available to authenticated users only."
+    ),
     responses={200: InventorySerializer(many=True)},
 )
 class InventoryListView(generics.ListCreateAPIView):
@@ -436,7 +489,10 @@ class InventoryListView(generics.ListCreateAPIView):
 
 @swagger_auto_schema(
     operation_summary="Get, update or delete inventory",
-    operation_description="Retrieve, update or delete a specific inventory item by its UUID. Available to authenticated users only.",
+    operation_description=(
+        "Retrieve, update or delete a specific inventory item "
+        "by its UUID. Available to authenticated users only."
+    ),
     responses={200: InventorySerializer, 404: "Inventory item not found"},
 )
 class InventoryDetailView(generics.RetrieveUpdateDestroyAPIView):
