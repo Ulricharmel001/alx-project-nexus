@@ -42,12 +42,12 @@ urlpatterns = [
     # Admin
     path("admin/users/", views.AdminUserListView.as_view(), name="admin-users"),
     path(
-        "admin/users/<uuid:user_id>/",
+        "admin/users/<int:user_id>/",
         views.AdminUserListView.as_view(),
         name="admin-user-detail",
     ),
     path(
-        "admin/users/<uuid:user_id>/delete/",
+        "admin/users/<int:user_id>/delete/",
         views.AdminUserDeleteView.as_view(),
         name="admin-user-delete",
     ),

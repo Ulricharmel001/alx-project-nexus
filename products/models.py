@@ -38,6 +38,7 @@ class Category(BaseModel):
         "self", null=True, blank=True, related_name="children", on_delete=models.CASCADE
     )
     banner_image = models.URLField(max_length=2048, blank=True, default="")
+    banner = models.ImageField(upload_to="categories/", blank=True, null=True)
     description = models.TextField(blank=True, default="")
 
     class Meta:

@@ -11,6 +11,7 @@ from .models import (Address, Cart, CartItem, Category, Inventory, Order,
 # CATEGORY
 class CategorySerializer(serializers.ModelSerializer):
     children = serializers.SerializerMethodField(read_only=True)
+    banner = serializers.ImageField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = Category
@@ -20,6 +21,7 @@ class CategorySerializer(serializers.ModelSerializer):
             "parent",
             "children",
             "banner_image",
+            "banner",
             "description",
             "created_at",
             "updated_at",
@@ -28,6 +30,29 @@ class CategorySerializer(serializers.ModelSerializer):
 
     def get_children(self, obj):
         return CategorySerializer(obj.children.all(), many=True).data
+
+    def create(self, validated_data):
+        banner_file = validated_data.pop("banner", None)
+        instance = Category.objects.create(**validated_data)
+        if banner_file:
+            instance.banner = banner_file
+            instance.save()
+        return instance
+
+    def update(self, instance, validated_data):
+        banner_file = validated_data.pop("banner", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if banner_file:
+            instance.banner = banner_file
+        instance.save()
+        return instance
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.banner:
+            data["banner_image"] = instance.banner.url
+        return data
 
 
 # PRODUCT IMAGE
@@ -76,7 +101,7 @@ class ProductImageSerializer(serializers.ModelSerializer):
 # PRODUCT
 class ProductSerializer(serializers.ModelSerializer):
     categories = serializers.PrimaryKeyRelatedField(
-        many=True, queryset=Category.objects.all()
+        many=True, queryset=Category.objects.all(), required=False
     )
     images = ProductImageSerializer(many=True, read_only=True)
 
@@ -103,6 +128,7 @@ class ProductSerializer(serializers.ModelSerializer):
         return value
 
     def create(self, validated_data):
+        user = self.context.get("request").user if self.context.get("request") else None
         if not validated_data.get("slug"):
             base = slugify(validated_data["name"])
             slug = base
@@ -111,7 +137,12 @@ class ProductSerializer(serializers.ModelSerializer):
                 slug = f"{base}-{counter}"
                 counter += 1
             validated_data["slug"] = slug
-        return super().create(validated_data)
+        instance = super().create(validated_data)
+        if user and user.is_authenticated:
+            instance.created_by = user
+            instance.updated_by = user
+            instance.save(update_fields=["created_by", "updated_by"])
+        return instance
 
 
 # ADDRESS

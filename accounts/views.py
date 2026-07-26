@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.signing import TimestampSigner
 from django.db.models import Count, Q
 from django.shortcuts import redirect
 from django.utils.decorators import method_decorator
@@ -11,7 +12,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from django.core.signing import TimestampSigner
 from .email_utils import (can_resend_code, send_verification_email,
                           send_welcome_email, store_verification_code,
                           verify_code)
@@ -480,6 +480,8 @@ class AdminUserDeleteView(APIView):
     def delete(self, request, user_id):
         if not request.user.is_staff:
             return Response({"error": "Admin access required"}, status=403)
+        if str(request.user.id) == str(user_id):
+            return Response({"error": "Cannot delete yourself"}, status=400)
         try:
             user = CustomUser.objects.get(id=user_id)
             user.delete()
