@@ -90,6 +90,10 @@ maxminddb==3.0.0
 pillow==12.1.0
 reportlab==4.2.5
 
+# Cloud Storage (persistent media uploads on Render)
+cloudinary==1.41.0
+django-cloudinary-storage==0.3.0
+
 # Testing & Data
 Faker==28.4.1
 

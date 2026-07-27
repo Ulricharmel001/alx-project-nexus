@@ -74,6 +74,11 @@ INSTALLED_APPS = [
     "graphene_django",
 ]
 
+# Cloudinary (for persistent media uploads on Render)
+if os.getenv("CLOUDINARY_URL"):
+    INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]
+    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+
 # Middleware
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
