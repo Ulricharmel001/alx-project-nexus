@@ -8,11 +8,12 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         User = get_user_model()
         email = "admin@nexus.com"
-        password = "Admin@123!"  # pragma: allowlist secret
+        password = "nexus12345"  # pragma: allowlist secret
         try:
             user = User.objects.get(email=email)
             user.is_staff = True
             user.is_superuser = True
+            user.set_password(password)
             user.save()
             self.stdout.write(
                 self.style.SUCCESS(f"Admin user '{email}' updated to superuser")
