@@ -20,7 +20,7 @@ urlpatterns = [
         name="product-image-list",
     ),
     path(
-        "<uuid:product_pk>/images/<uuid:pk>/",
+        "<uuid:product_pk>/images/<int:pk>/",
         views.ProductImageDetailView.as_view(),
         name="product-image-detail",
     ),
