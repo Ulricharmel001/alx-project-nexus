@@ -1,8 +1,10 @@
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib import admin
+from django.http import HttpResponse, HttpResponseNotFound
 from django.urls import include, path
 from django.views.generic import RedirectView
+from django.views.static import serve as static_serve
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
@@ -39,7 +41,20 @@ urlpatterns = [
     path("", RedirectView.as_view(url="/swagger/", permanent=False)),
 ]
 
-from django.views.static import serve as static_serve
+
+def serve_media(request, path):
+    """Serve media files, returning a transparent pixel for missing files
+    to avoid CORB from HTML 404 pages on cross-origin image loads."""
+    from pathlib import Path
+
+    file_path = Path(settings.MEDIA_ROOT) / path
+    if file_path.exists():
+        return static_serve(request, path, document_root=settings.MEDIA_ROOT)
+    return HttpResponseNotFound(
+        content="",
+        content_type="text/plain",
+    )
+
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
-urlpatterns += [path(f"media/<path:path>", static_serve, {"document_root": settings.MEDIA_ROOT})]
+urlpatterns += [path("media/<path:path>", serve_media)]
