@@ -75,9 +75,16 @@ INSTALLED_APPS = [
 ]
 
 # Cloudinary (for persistent media uploads on Render)
-if os.getenv("CLOUDINARY_URL"):
+import re
+_cloudinary_url = os.getenv("CLOUDINARY_URL")
+if _cloudinary_url:
     INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]
     DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
+    # Parse CLOUDINARY_URL for explicit config values
+    _match = re.match(r"cloudinary://(\d+):([^@]+)@(.+)", _cloudinary_url)
+    if _match:
+        CLOUDINARY_CLOUD_NAME = _match.group(3)
+        # cloudinary.config is called by django-cloudinary-storage via env var
 
 # Middleware
 MIDDLEWARE = [
