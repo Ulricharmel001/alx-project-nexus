@@ -11,6 +11,8 @@ from products.models import Product
 @ratelimit(key="ip", rate="5/m", block=True)
 def checkout_view(request):
     if request.method == "POST":
+        if not request.user.is_authenticated:
+            return JsonResponse({"error": "Authentication required"}, status=401)
         return JsonResponse(
             {"status": "success", "message": "Checkout processed successfully"}
         )
@@ -44,6 +46,7 @@ def product_detail_view(request, product_id):
 
 
 @ratelimit(key="ip", rate="15/m", block=True)
+@login_required
 def add_to_cart_view(request, product_id):
     try:
         uuid_obj = uuid.UUID(product_id)
@@ -56,6 +59,7 @@ def add_to_cart_view(request, product_id):
 
 
 @ratelimit(key="ip", rate="20/m", block=True)
+@login_required
 def apply_coupon_view(request):
     if request.method == "POST":
         return JsonResponse({"status": "success", "message": "Coupon applied"})

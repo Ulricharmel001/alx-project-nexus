@@ -258,13 +258,14 @@ def checkout(request):
 
         # Send payment attempt notification
         try:
+            frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
             send_payment_attempt_email(
                 email=request.user.email,
                 first_name=request.user.first_name or "Customer",
                 order_id=str(order.id),
                 amount=str(order.total_price),
                 currency=order.currency,
-                checkout_url=f"/api/products/purchases/create/?order_id={order.id}",
+                checkout_url=f"{frontend_url}/checkout?order_id={order.id}",
             )
         except Exception as e:
             logger.warning(f"Failed to send payment attempt email: {e}")
@@ -275,7 +276,7 @@ def checkout(request):
             {
                 "message": "Order created successfully",
                 "order": order_serializer.data,
-                "checkout_url": f"/api/products/purchases/create/?order_id={order.id}",
+                "checkout_url": f"{frontend_url}/checkout?order_id={order.id}",
             }
         )
 

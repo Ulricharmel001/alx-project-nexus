@@ -9,17 +9,15 @@ from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
 from drf_yasg.utils import swagger_auto_schema
 from rest_framework import filters, generics, parsers, viewsets
-from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.decorators import action, api_view, permission_classes
+from rest_framework.exceptions import ValidationError as DRFValidationError
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
-from accounts.email_utils import (
-    send_payment_attempt_email,
-    send_payment_success_email,
-    send_payment_failed_email,
-)
+from accounts.email_utils import (send_payment_attempt_email,
+                                  send_payment_failed_email,
+                                  send_payment_success_email)
 from accounts.models import CustomUser
 
 from .chapa_service import ChapaService
@@ -59,6 +57,13 @@ class CategoryListView(generics.ListCreateAPIView):
     ordering_fields = ["created_at", "name"]
     ordering = ["-created_at"]
 
+    def perform_create(self, serializer):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can create categories")
+        serializer.save()
+
 
 @swagger_auto_schema(
     operation_summary="Get, update or delete a category",
@@ -72,6 +77,20 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     parser_classes = [parsers.MultiPartParser, parsers.FormParser, parsers.JSONParser]
+
+    def perform_update(self, serializer):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can update categories")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can delete categories")
+        instance.delete()
 
 
 @swagger_auto_schema(
@@ -112,6 +131,13 @@ class ProductListView(generics.ListCreateAPIView):
     ordering_fields = ["created_at", "name", "price"]
     ordering = ["-created_at"]
 
+    def perform_create(self, serializer):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can create products")
+        serializer.save()
+
 
 @swagger_auto_schema(
     operation_summary="Get, update or delete a product",
@@ -122,6 +148,20 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+
+    def perform_update(self, serializer):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can update products")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can delete products")
+        instance.delete()
 
 
 # --- Product Images ---
@@ -136,6 +176,10 @@ class ProductImageListCreateView(generics.ListCreateAPIView):
         return ProductImage.objects.filter(product_id=self.kwargs["product_pk"])
 
     def perform_create(self, serializer):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can add images")
         product = get_object_or_404(Product, pk=self.kwargs["product_pk"])
         if product.images.count() >= 10:
             raise DRFValidationError("Maximum of 10 images per product")
@@ -149,6 +193,20 @@ class ProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_queryset(self):
         return ProductImage.objects.filter(product_id=self.kwargs["product_pk"])
+
+    def perform_update(self, serializer):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can update images")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can delete images")
+        instance.delete()
 
 
 # --- Product Search ---
@@ -170,6 +228,7 @@ class ProductImageDetailView(generics.RetrieveUpdateDestroyAPIView):
     responses={200: ProductSerializer(many=True)},
 )
 @api_view(["GET"])
+@permission_classes([AllowAny])
 def product_search(request):
     query = request.GET.get("q")
     products = (
@@ -466,7 +525,9 @@ class PurchaseViewSet(viewsets.ModelViewSet):
             # Send payment success notification
             customer = purchase.order.customer
             recipient_email = customer.email if customer else purchase.order.guest_email
-            recipient_name = customer.first_name if customer else purchase.order.guest_first_name
+            recipient_name = (
+                customer.first_name if customer else purchase.order.guest_first_name
+            )
             if recipient_email:
                 try:
                     send_payment_success_email(
@@ -484,7 +545,9 @@ class PurchaseViewSet(viewsets.ModelViewSet):
             # Send payment failure notification
             customer = purchase.order.customer
             recipient_email = customer.email if customer else purchase.order.guest_email
-            recipient_name = customer.first_name if customer else purchase.order.guest_first_name
+            recipient_name = (
+                customer.first_name if customer else purchase.order.guest_first_name
+            )
             if recipient_email:
                 try:
                     send_payment_failed_email(
@@ -550,6 +613,13 @@ class InventoryListView(generics.ListCreateAPIView):
     ordering_fields = ["created_at", "quantity"]
     ordering = ["-created_at"]
 
+    def perform_create(self, serializer):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can create inventory")
+        serializer.save()
+
 
 @swagger_auto_schema(
     operation_summary="Get, update or delete inventory",
@@ -563,6 +633,20 @@ class InventoryDetailView(generics.RetrieveUpdateDestroyAPIView):
     queryset = Inventory.objects.all()
     serializer_class = InventorySerializer
     permission_classes = [IsAuthenticated]
+
+    def perform_update(self, serializer):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can update inventory")
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if not self.request.user.is_staff:
+            from rest_framework.exceptions import PermissionDenied
+
+            raise PermissionDenied("Only admins can delete inventory")
+        instance.delete()
 
 
 # --- Admin Dashboard ---
