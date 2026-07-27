@@ -2,6 +2,7 @@ import logging
 import uuid
 from decimal import Decimal
 
+from django.conf import settings
 from django.db import models
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -346,9 +347,8 @@ class PurchaseViewSet(viewsets.ModelViewSet):
             return Response({"error": "Order already paid"}, status=400)
 
         tx_ref = f"TX-{uuid.uuid4().hex[:12].upper()}"
-        return_url = request.build_absolute_uri(
-            f"/api/v1/products/purchases/verify/{tx_ref}/"
-        )
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        return_url = f"{frontend_url}/payment/return?tx_ref={tx_ref}"
         chapa = ChapaService()
         response = chapa.initiate_payment(
             first_name=data["first_name"],
