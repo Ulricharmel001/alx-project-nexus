@@ -75,20 +75,33 @@ INSTALLED_APPS = [
 ]
 
 # Cloudinary (for persistent media uploads on Render)
-import re
-_cloudinary_url = os.getenv("CLOUDINARY_URL")
+_cloudinary_url = os.getenv("CLOUDINARY_URL") or os.environ.get("CLOUDINARY_URL")
 if _cloudinary_url:
+    import cloudinary
+    import cloudinary_storage
     INSTALLED_APPS += ["cloudinary_storage", "cloudinary"]
-    DEFAULT_FILE_STORAGE = "cloudinary_storage.storage.MediaCloudinaryStorage"
-    # Parse CLOUDINARY_URL for explicit config values
-    _match = re.match(r"cloudinary://(\d+):([^@]+)@(.+)", _cloudinary_url)
-    if _match:
-        CLOUDINARY_CLOUD_NAME = _match.group(3)
-        CLOUDINARY_API_KEY = _match.group(1)
-        CLOUDINARY_API_SECRET = _match.group(2)
-        # Explicitly configure cloudinary
-        import cloudinary
-        cloudinary.config(cloud_name=CLOUDINARY_CLOUD_NAME, api_key=CLOUDINARY_API_KEY, api_secret=CLOUDINARY_API_SECRET, secure=True)
+    STORAGES = {
+        "default": {
+            "BACKEND": "cloudinary_storage.storage.MediaCloudinaryStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+    # Parse CLOUDINARY_URL and configure cloudinary
+    _parts = _cloudinary_url.replace("cloudinary://", "").split("@")
+    _creds = _parts[0].split(":")
+    _cloud_name = _parts[1] if len(_parts) > 1 else ""
+    if len(_creds) >= 2 and _cloud_name:
+        CLOUDINARY_CLOUD_NAME = _cloud_name
+        CLOUDINARY_API_KEY = _creds[0]
+        CLOUDINARY_API_SECRET = _creds[1]
+        cloudinary.config(
+            cloud_name=CLOUDINARY_CLOUD_NAME,
+            api_key=CLOUDINARY_API_KEY,
+            api_secret=CLOUDINARY_API_SECRET,
+            secure=True,
+        )
 
 # Middleware
 MIDDLEWARE = [
