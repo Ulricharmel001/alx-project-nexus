@@ -34,14 +34,15 @@ def generate_and_send_receipt_email(purchase_id):
         pdf_buffer = generate_pdf_receipt(purchase)
 
         subject = f"Receipt for Your Purchase #{purchase.transaction_reference}"
-        recipient_email = purchase.order.customer.email
+        customer = purchase.order.customer
+        recipient_email = customer.email if customer else purchase.order.guest_email
 
         email_body = render_to_string(
             "receipt_email.html",
             {
                 "purchase": purchase,
                 "order": purchase.order,
-                "customer": purchase.order.customer,
+                "customer": customer,
             },
         )
 
@@ -162,17 +163,22 @@ def generate_pdf_receipt(purchase):
 
     elements.append(Paragraph("CUSTOMER INFORMATION", heading_style))
 
+    customer = purchase.order.customer
+    customer_name = (
+        f"{customer.first_name} {customer.last_name}"
+        if customer
+        else f"{purchase.order.guest_first_name} {purchase.order.guest_last_name}"
+    )
+    customer_email = customer.email if customer else purchase.order.guest_email
+
     customer_data = [
         [
             Paragraph("<b>Name:</b>", styles["Normal"]),
-            Paragraph(
-                f"{purchase.order.customer.first_name} {purchase.order.customer.last_name}",
-                styles["Normal"],
-            ),
+            Paragraph(customer_name, styles["Normal"]),
         ],
         [
             Paragraph("<b>Email:</b>", styles["Normal"]),
-            Paragraph(purchase.order.customer.email, styles["Normal"]),
+            Paragraph(customer_email, styles["Normal"]),
         ],
         [
             Paragraph("<b>Shipping Address:</b>", styles["Normal"]),
