@@ -84,7 +84,11 @@ if _cloudinary_url:
     _match = re.match(r"cloudinary://(\d+):([^@]+)@(.+)", _cloudinary_url)
     if _match:
         CLOUDINARY_CLOUD_NAME = _match.group(3)
-        # cloudinary.config is called by django-cloudinary-storage via env var
+        CLOUDINARY_API_KEY = _match.group(1)
+        CLOUDINARY_API_SECRET = _match.group(2)
+        # Explicitly configure cloudinary
+        import cloudinary
+        cloudinary.config(cloud_name=CLOUDINARY_CLOUD_NAME, api_key=CLOUDINARY_API_KEY, api_secret=CLOUDINARY_API_SECRET, secure=True)
 
 # Middleware
 MIDDLEWARE = [
