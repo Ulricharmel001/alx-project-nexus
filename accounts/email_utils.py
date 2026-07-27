@@ -87,38 +87,83 @@ def can_resend_code(email):
 
 
 def send_verification_email(email, code):
-    from .tasks import send_verification_email_task
+    from .tasks import send_verification_email as _send
 
     try:
-        send_verification_email_task.delay(email, code)
-        logger.info(f"Verification email queued for {email}")
-        return True, "Verification email sent"
+        result = _send(email, code)
+        if result.get("status") == "success":
+            logger.info(f"Verification email sent to {email}")
+            return True, "Verification email sent"
+        else:
+            logger.error(f"Failed to send verification email: {result.get('message')}")
+            return False, result.get("message", "Failed to send verification email")
     except Exception as e:
-        logger.error(f"Failed to queue verification email: {str(e)}")
+        logger.error(f"Failed to send verification email: {str(e)}")
         return False, f"Failed to send verification email: {str(e)}"
 
 
 def send_password_reset_email(user, reset_token, uid):
-    from .tasks import send_password_reset_email_task
+    from .tasks import send_password_reset_email as _send
 
     try:
-        send_password_reset_email_task.delay(
-            user.email, user.first_name, reset_token, uid
-        )
-        logger.info(f"Password reset email queued for {user.email}")
-        return True, "Password reset email sent successfully"
+        result = _send(user.email, user.first_name, reset_token, uid)
+        if result.get("status") == "success":
+            logger.info(f"Password reset email sent to {user.email}")
+            return True, "Password reset email sent successfully"
+        else:
+            logger.error(f"Failed to send password reset email: {result.get('message')}")
+            return False, result.get("message", "Failed to send password reset email")
     except Exception as e:
-        logger.error(f"Failed to queue password reset email: {str(e)}")
+        logger.error(f"Failed to send password reset email: {str(e)}")
         return False, f"Failed to send password reset email: {str(e)}"
 
 
 def send_welcome_email(email, first_name):
-    from .tasks import send_welcome_email_task
+    from .tasks import send_welcome_email
 
     try:
-        send_welcome_email_task.delay(email, first_name)
-        logger.info(f"Welcome email queued for {email}")
-        return True, "Welcome email sent successfully"
+        result = send_welcome_email(email, first_name)
+        if result.get("status") == "success":
+            logger.info(f"Welcome email sent to {email}")
+            return True, "Welcome email sent successfully"
+        else:
+            logger.error(f"Failed to send welcome email: {result.get('message')}")
+            return False, result.get("message", "Failed to send welcome email")
     except Exception as e:
-        logger.error(f"Failed to queue welcome email: {str(e)}")
+        logger.error(f"Failed to send welcome email: {str(e)}")
         return False, f"Failed to send welcome email: {str(e)}"
+
+
+# Payment event email helpers
+
+def send_payment_attempt_email(email, first_name, order_id, amount, currency, checkout_url):
+    from .tasks import send_payment_attempt_email as _send
+
+    try:
+        _send(email, first_name, order_id, amount, currency, checkout_url)
+        return True, "Payment attempt email sent"
+    except Exception as e:
+        logger.error(f"Failed to send payment attempt email: {str(e)}")
+        return False, str(e)
+
+
+def send_payment_success_email(email, first_name, order_id, tx_ref, amount, currency):
+    from .tasks import send_payment_success_email as _send
+
+    try:
+        _send(email, first_name, order_id, tx_ref, amount, currency)
+        return True, "Payment success email sent"
+    except Exception as e:
+        logger.error(f"Failed to send payment success email: {str(e)}")
+        return False, str(e)
+
+
+def send_payment_failed_email(email, first_name, order_id, tx_ref, amount, currency):
+    from .tasks import send_payment_failed_email as _send
+
+    try:
+        _send(email, first_name, order_id, tx_ref, amount, currency)
+        return True, "Payment failed email sent"
+    except Exception as e:
+        logger.error(f"Failed to send payment failed email: {str(e)}")
+        return False, str(e)

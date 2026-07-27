@@ -1,23 +1,24 @@
 import logging
 
-from celery import shared_task
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import send_mail, EmailMultiAlternatives
 from django.core.signing import TimestampSigner
+from django.template.loader import render_to_string
+
+from accounts.models import CustomUser
 
 logger = logging.getLogger(__name__)
 signer = TimestampSigner()
 
 
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_verification_email_task(self, email, code):
+def send_verification_email(email, code):
     try:
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
         token = signer.sign(email)
         verify_link = f"{frontend_url}/verify-email/link?token={token}"
 
         send_mail(
-            subject="Verify your email — Nexus",
+            subject="Verify your email \u2014 Nexus",
             message=f"""
 Hello,
 
@@ -50,14 +51,14 @@ Nexus Team
 
     except Exception as exc:
         logger.error(f"Failed to send verification email to {email}: {str(exc)}")
+        return {
+            "status": "error",
+            "message": f"Failed to send verification email: {str(exc)}",
+        }
 
-        raise self.retry(exc=exc)
 
-
-@shared_task(bind=True, max_retries=3, default_retry_delay=60)
-def send_password_reset_email_task(self, user_email, user_first_name, reset_token, uid):
+def send_password_reset_email(user_email, user_first_name, reset_token, uid):
     try:
-        # Build reset link from frontend URL
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
         reset_link = f"{frontend_url}/reset-password?uid={uid}&token={reset_token}"
 
@@ -84,7 +85,7 @@ Ulrich E-Commerce Team
             fail_silently=False,
         )
 
-        logger.info(f"✓ Password reset email sent to {user_email}")
+        logger.info(f"Password reset email sent to {user_email}")
         return {
             "status": "success",
             "message": f"Password reset email sent to {user_email}",
@@ -92,14 +93,14 @@ Ulrich E-Commerce Team
         }
 
     except Exception as exc:
-        logger.error(
-            f"✗ Failed to send password reset email to {user_email}: {str(exc)}"
-        )
-        raise self.retry(exc=exc)
+        logger.error(f"Failed to send password reset email to {user_email}: {str(exc)}")
+        return {
+            "status": "error",
+            "message": f"Failed to send password reset email: {str(exc)}",
+        }
 
 
-@shared_task(bind=True, max_retries=2, default_retry_delay=30)
-def send_welcome_email_task(self, user_email, user_first_name):
+def send_welcome_email(user_email, user_first_name):
     try:
         send_mail(
             subject="Welcome to Your Best shop!",
@@ -118,7 +119,7 @@ Ulrich - alx-project nexus
             fail_silently=False,
         )
 
-        logger.info(f"✓ Welcome email sent to {user_email}")
+        logger.info(f"Welcome email sent to {user_email}")
         return {
             "status": "success",
             "message": f"Welcome email sent to {user_email}",
@@ -127,4 +128,111 @@ Ulrich - alx-project nexus
 
     except Exception as exc:
         logger.error(f"Failed to send welcome email to {user_email}: {str(exc)}")
-        raise self.retry(exc=exc)
+        return {
+            "status": "error",
+            "message": f"Failed to send welcome email: {str(exc)}",
+        }
+
+
+# Payment event emails
+
+def send_payment_attempt_email(email, first_name, order_id, amount, currency, checkout_url):
+    try:
+        send_mail(
+            subject="Payment Initiated \u2014 Nexus",
+            message=f"""
+Hello {first_name},
+
+We have received your payment request.
+
+Order ID: {order_id}
+Amount: {amount} {currency}
+
+Please complete your payment using the secure checkout link below:
+{checkout_url}
+
+If you didn't initiate this payment, please ignore this email.
+
+Best regards,
+Nexus Team
+        """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+        logger.info(f"Payment attempt email sent to {email}")
+    except Exception as e:
+        logger.error(f"Failed to send payment attempt email: {str(e)}")
+
+
+def send_payment_success_email(email, first_name, order_id, tx_ref, amount, currency):
+    try:
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        order_link = f"{frontend_url}/orders/{order_id}"
+
+        send_mail(
+            subject="Payment Successful \u2014 Nexus",
+            message=f"""
+Hello {first_name},
+
+Your payment was successful!
+
+Transaction Reference: {tx_ref}
+Order ID: {order_id}
+Amount Paid: {amount} {currency}
+
+View your order details here:
+{order_link}
+
+Your order is being processed and you will receive a shipping confirmation soon.
+
+Thank you for shopping with us!
+
+Best regards,
+Nexus Team
+        """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+        logger.info(f"Payment success email sent to {email}")
+    except Exception as e:
+        logger.error(f"Failed to send payment success email: {str(e)}")
+
+
+def send_payment_failed_email(email, first_name, order_id, tx_ref, amount, currency):
+    try:
+        frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
+        retry_link = f"{frontend_url}/orders/{order_id}"
+
+        send_mail(
+            subject="Payment Failed \u2014 Nexus",
+            message=f"""
+Hello {first_name},
+
+Unfortunately, your payment could not be completed.
+
+Transaction Reference: {tx_ref}
+Order ID: {order_id}
+Amount: {amount} {currency}
+
+What you can do:
+1. Check your card details and try again
+2. Use a different payment method
+3. Contact your bank if the issue persists
+
+You can retry or view your order here:
+{retry_link}
+
+If you need assistance, please contact our support team.
+
+Best regards,
+Nexus Team
+        """,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[email],
+            fail_silently=False,
+        )
+        logger.info(f"Payment failed email sent to {email}")
+    except Exception as e:
+        logger.error(f"Failed to send payment failed email: {str(e)}")

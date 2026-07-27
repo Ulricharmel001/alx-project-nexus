@@ -1,7 +1,6 @@
 import logging
 from io import BytesIO
 
-from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -9,7 +8,7 @@ from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
-from reportlab.pdfgen import canvas
+from reportlab.pdfgen import canvas as pdf_canvas
 from reportlab.platypus import (Image, Paragraph, SimpleDocTemplate, Spacer,
                                 Table, TableStyle)
 
@@ -20,29 +19,23 @@ from .models import Order, OrderItem, Purchase
 logger = logging.getLogger(__name__)
 
 
-@shared_task
 def generate_and_send_receipt_email(purchase_id):
     try:
-        # Get the purchase object
         purchase = Purchase.objects.select_related(
             "order", "order__customer", "order__shipping_address"
         ).get(id=purchase_id)
 
-        # Check if purchase is completed
         if purchase.status != "completed":
             logger.warning(
                 f"Attempted to generate receipt for non-completed purchase: {purchase_id}"
             )
             return False
 
-        # Generate PDF receipt
         pdf_buffer = generate_pdf_receipt(purchase)
 
-        # Prepare email content
         subject = f"Receipt for Your Purchase #{purchase.transaction_reference}"
         recipient_email = purchase.order.customer.email
 
-        # Render email body
         email_body = render_to_string(
             "receipt_email.html",
             {
@@ -52,7 +45,6 @@ def generate_and_send_receipt_email(purchase_id):
             },
         )
 
-        # Send email with PDF attachment
         email = EmailMultiAlternatives(
             subject=subject,
             body=email_body,
@@ -90,7 +82,6 @@ def generate_pdf_receipt(purchase):
 
     elements = []
 
-    # Get styles
     styles = getSampleStyleSheet()
     title_style = ParagraphStyle(
         "CustomTitle",
@@ -108,12 +99,10 @@ def generate_pdf_receipt(purchase):
         textColor=colors.darkgreen,
     )
 
-    # Title
     title = Paragraph("PURCHASE RECEIPT", title_style)
     elements.append(title)
     elements.append(Spacer(1, 12))
 
-    # Company info
     company_info = [
         Paragraph("<b>ALX E-Commerce Platform</b>", styles["Normal"]),
         Paragraph("123, Damas", styles["Normal"]),
@@ -127,7 +116,6 @@ def generate_pdf_receipt(purchase):
 
     elements.append(Spacer(1, 20))
 
-    # Customer and purchase details
     details_data = [
         [
             Paragraph("<b>Purchase Date:</b>", styles["Normal"]),
@@ -172,7 +160,6 @@ def generate_pdf_receipt(purchase):
     elements.append(details_table)
     elements.append(Spacer(1, 20))
 
-    # Customer Information
     elements.append(Paragraph("CUSTOMER INFORMATION", heading_style))
 
     customer_data = [
@@ -214,14 +201,11 @@ def generate_pdf_receipt(purchase):
     elements.append(customer_table)
     elements.append(Spacer(1, 20))
 
-    # Order Items
     elements.append(Paragraph("ORDER ITEMS", heading_style))
 
-    # Table header
     item_header = ["Product Name", "Quantity", "Unit Price", "Subtotal"]
     item_data = [item_header]
 
-    # Add order items
     for item in purchase.order.items.all():
         item_data.append(
             [
@@ -232,12 +216,10 @@ def generate_pdf_receipt(purchase):
             ]
         )
 
-    # Add total row
     item_data.append(
         ["", "", "<b>TOTAL</b>", f"<b>{purchase.amount} {purchase.currency}</b>"]
     )
 
-    # Create table
     item_table = Table(item_data, colWidths=[2 * inch, 1 * inch, 1.2 * inch, 1 * inch])
     item_table.setStyle(
         TableStyle(
@@ -259,7 +241,6 @@ def generate_pdf_receipt(purchase):
     elements.append(item_table)
     elements.append(Spacer(1, 20))
 
-    # Thank you message
     thank_you = Paragraph(
         "Thank you for your purchase! We appreciate your business and hope you enjoy your items. "
         "If you have any questions about your order, please contact our customer service team.",
@@ -268,20 +249,17 @@ def generate_pdf_receipt(purchase):
     elements.append(thank_you)
     elements.append(Spacer(1, 20))
 
-    # Terms and conditions
     terms = Paragraph(
         "<b>Terms and Conditions:</b><br/>"
-        "• This receipt serves as proof of purchase.<br/>"
-        "• All sales are final unless covered by our return policy.<br/>"
-        "• For returns or exchanges, please contact us within 30 days of purchase.",
+        "\u2022 This receipt serves as proof of purchase.<br/>"
+        "\u2022 All sales are final unless covered by our return policy.<br/>"
+        "\u2022 For returns or exchanges, please contact us within 30 days of purchase.",
         styles["Normal"],
     )
     elements.append(terms)
 
-    # Build PDF
     doc.build(elements)
 
-    # Move to the beginning of the buffer
     buffer.seek(0)
 
     return buffer

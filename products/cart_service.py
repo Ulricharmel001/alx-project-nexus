@@ -10,11 +10,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
+from accounts.email_utils import send_payment_attempt_email
+
 from .chapa_service import ChapaService
 from .models import (Address, Cart, CartItem, Inventory, Order, OrderItem,
                      Product)
 from .serializers import CartItemSerializer, CartSerializer, OrderSerializer
-from .tasks import generate_and_send_receipt_email
 
 logger = logging.getLogger(__name__)
 
@@ -254,6 +255,19 @@ def checkout(request):
         # Clear the cart
         cart.items.all().delete()
 
+        # Send payment attempt notification
+        try:
+            send_payment_attempt_email(
+                email=request.user.email,
+                first_name=request.user.first_name or "Customer",
+                order_id=str(order.id),
+                amount=str(order.total_price),
+                currency=order.currency,
+                checkout_url=f"/api/products/purchases/create/?order_id={order.id}",
+            )
+        except Exception as e:
+            logger.warning(f"Failed to send payment attempt email: {e}")
+
         # Return order details for payment processing
         order_serializer = OrderSerializer(order)
         return Response(
@@ -476,6 +490,19 @@ def guest_checkout(request):
         transaction_reference=tx_ref,
     )
 
+    # Send payment attempt notification to guest
+    try:
+        send_payment_attempt_email(
+            email=email,
+            first_name=first_name,
+            order_id=str(order.id),
+            amount=str(order.total_price),
+            currency="ETB",
+            checkout_url=payment_response["data"]["checkout_url"],
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send payment attempt email: {e}")
+
     return Response(
         {
             "checkout_url": payment_response["data"]["checkout_url"],
@@ -536,6 +563,19 @@ def initiate_payment_test(request):
         transaction_reference=tx_ref,
         created_by=request.user,
     )
+
+    # Send payment attempt notification
+    try:
+        send_payment_attempt_email(
+            email=email,
+            first_name=first_name,
+            order_id=str(order.id),
+            amount=str(order.total_price),
+            currency="ETB",
+            checkout_url=response["data"]["checkout_url"],
+        )
+    except Exception as e:
+        logger.warning(f"Failed to send payment attempt email: {e}")
 
     return Response(
         {
