@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from django.conf import settings
 from django.db import models
+from django.db.models.deletion import ProtectedError
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_yasg import openapi
@@ -90,7 +91,16 @@ class CategoryDetailView(generics.RetrieveUpdateDestroyAPIView):
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied("Only admins can delete categories")
-        instance.delete()
+        try:
+            instance.delete()
+        except ProtectedError:
+            from rest_framework.exceptions import APIException
+
+            raise APIException(
+                "Cannot delete this category because it is linked to existing products. "
+                "Remove all product references first.",
+                code="protected_error",
+            )
 
 
 @swagger_auto_schema(
@@ -161,7 +171,16 @@ class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
             from rest_framework.exceptions import PermissionDenied
 
             raise PermissionDenied("Only admins can delete products")
-        instance.delete()
+        try:
+            instance.delete()
+        except ProtectedError:
+            from rest_framework.exceptions import APIException
+
+            raise APIException(
+                "Cannot delete this product because it is linked to existing orders. "
+                "Remove all order references first.",
+                code="protected_error",
+            )
 
 
 # --- Product Images ---
