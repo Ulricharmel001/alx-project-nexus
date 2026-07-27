@@ -1,14 +1,23 @@
+import getpass
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = "Create an admin superuser"
+    help = "Create or update an admin superuser"
+
+    def add_arguments(self, parser):
+        parser.add_argument("--email", default="admin@nexus.com", help="Admin email")
+        parser.add_argument(
+            "--password",
+            help="Admin password (prompted securely if omitted)",
+        )
 
     def handle(self, *args, **options):
         User = get_user_model()
-        email = "admin@nexus.com"
-        password = "nexus12345"  # pragma: allowlist secret
+        email = options["email"]
+        password = options["password"] or getpass.getpass("Password: ")
         try:
             user = User.objects.get(email=email)
             user.is_staff = True
