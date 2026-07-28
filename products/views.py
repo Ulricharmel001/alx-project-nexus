@@ -127,7 +127,9 @@ def category_tree(request):
     responses={200: ProductSerializer(many=True)},
 )
 class ProductListView(generics.ListCreateAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.prefetch_related(
+        "images"
+    ).all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
     filter_backends = [
@@ -153,7 +155,9 @@ class ProductListView(generics.ListCreateAPIView):
     responses={200: ProductSerializer, 404: "Product not found"},
 )
 class ProductDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Product.objects.all()
+    queryset = Product.objects.prefetch_related(
+        "images"
+    ).all()
     serializer_class = ProductSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 

@@ -95,8 +95,8 @@ class ProductImageSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        if instance.image and not instance.image_url:
-            request = self.context.get("request")
+        request = self.context.get("request")
+        if instance.image:
             url = instance.image.url
             data["image_url"] = request.build_absolute_uri(url) if request else url
         return data
