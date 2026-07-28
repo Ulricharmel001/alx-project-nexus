@@ -11,7 +11,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
-from accounts.email_utils import send_payment_attempt_email
+from accounts.email_utils import send_payment_attempt_email_async
 
 from .chapa_service import ChapaService
 from .models import (Address, Cart, CartItem, Inventory, Order, OrderItem,
@@ -259,7 +259,7 @@ def checkout(request):
         # Send payment attempt notification
         try:
             frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
-            send_payment_attempt_email(
+            send_payment_attempt_email_async(
                 email=request.user.email,
                 first_name=request.user.first_name or "Customer",
                 order_id=str(order.id),
@@ -493,7 +493,7 @@ def guest_checkout(request):
 
     # Send payment attempt notification to guest
     try:
-        send_payment_attempt_email(
+        send_payment_attempt_email_async(
             email=email,
             first_name=first_name,
             order_id=str(order.id),
@@ -566,7 +566,7 @@ def initiate_payment_test(request):
 
     # Send payment attempt notification
     try:
-        send_payment_attempt_email(
+        send_payment_attempt_email_async(
             email=email,
             first_name=first_name,
             order_id=str(order.id),

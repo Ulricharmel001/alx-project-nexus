@@ -13,7 +13,8 @@ from rest_framework.views import APIView
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .email_utils import (can_resend_code, send_verification_email,
-                          send_welcome_email, store_verification_code,
+                          send_verification_email_async, send_welcome_email,
+                          send_welcome_email_async, store_verification_code,
                           verify_code)
 from .models import CustomUser, UserProfile
 from .serializers import (ChangePasswordSerializer,
@@ -79,7 +80,7 @@ class RegistrationView(APIView):
             # Generate 6-digit verification code (stored in memory)
             code = store_verification_code(user.email)
 
-            send_verification_email(user.email, code)
+            send_verification_email_async(user.email, code)
 
             # Generate JWT tokens
             refresh = RefreshToken.for_user(user)
@@ -285,7 +286,7 @@ class EmailVerificationView(APIView):
                     user = CustomUser.objects.get(email=email)
 
                     # Send welcome email after successful verification
-                    send_welcome_email(user.email, user.first_name)
+                    send_welcome_email_async(user.email, user.first_name)
 
                     return Response(
                         {"message": message, "user": UserDetailSerializer(user).data},
@@ -313,7 +314,7 @@ class EmailVerifyLinkView(APIView):
         try:
             email = signer.unsign(token, max_age=300)
             user = CustomUser.objects.get(email=email)
-            send_welcome_email(user.email, user.first_name)
+            send_welcome_email_async(user.email, user.first_name)
             serializer = UserDetailSerializer(user)
             return Response(
                 {"message": "Email verified successfully", "user": serializer.data},
@@ -343,7 +344,7 @@ class ResendVerificationEmailView(APIView):
                 # Generate new 6-digit code
                 code = store_verification_code(email)
 
-                send_verification_email(email, code)
+                send_verification_email_async(email, code)
                 return Response(
                     {
                         "message": "Verification email sent",
@@ -425,7 +426,7 @@ class GoogleCallbackView(APIView):
                 )
             user, created = GoogleAuthHandler.get_or_create_user(google_user_data)
             if created:
-                send_welcome_email(user.email, user.first_name)
+                send_welcome_email_async(user.email, user.first_name)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
             return Response(
                 {
@@ -514,7 +515,7 @@ class GoogleTokenView(APIView):
                 )
             user, created = GoogleAuthHandler.get_or_create_user(google_user_data)
             if created:
-                send_welcome_email(user.email, user.first_name)
+                send_welcome_email_async(user.email, user.first_name)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
             return Response(
                 {

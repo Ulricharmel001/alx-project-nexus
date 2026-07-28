@@ -125,27 +125,49 @@ class ProductSerializer(serializers.ModelSerializer):
             "updated_at",
         ]
         read_only_fields = ["id", "created_at", "updated_at"]
+        extra_kwargs = {
+            "slug": {"required": False},
+        }
 
     def validate_price(self, value):
         if value <= 0:
             raise serializers.ValidationError("Price must be greater than zero.")
         return value
 
+    def _get_user(self):
+        request = self.context.get("request")
+        return request.user if request and hasattr(request, "user") else None
+
+    def _generate_slug(self, name):
+        base = slugify(name)
+        slug = base
+        counter = 1
+        while Product.objects.filter(slug=slug).exists():
+            slug = f"{base}-{counter}"
+            counter += 1
+        return slug
+
     def create(self, validated_data):
-        user = self.context.get("request").user if self.context.get("request") else None
+        user = self._get_user()
         if not validated_data.get("slug"):
-            base = slugify(validated_data["name"])
-            slug = base
-            counter = 1
-            while Product.objects.filter(slug=slug).exists():
-                slug = f"{base}-{counter}"
-                counter += 1
-            validated_data["slug"] = slug
+            validated_data["slug"] = self._generate_slug(validated_data["name"])
         instance = super().create(validated_data)
         if user and user.is_authenticated:
             instance.created_by = user
             instance.updated_by = user
             instance.save(update_fields=["created_by", "updated_by"])
+        return instance
+
+    def update(self, instance, validated_data):
+        user = self._get_user()
+        categories = validated_data.pop("categories", None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if categories is not None:
+            instance.categories.set(categories)
+        if user and user.is_authenticated:
+            instance.updated_by = user
+        instance.save()
         return instance
 
 

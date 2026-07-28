@@ -27,7 +27,7 @@ def notify_payment_status(sender, instance, created, raw, **kwargs):
 
 
 def _send_success_email(purchase):
-    from accounts.email_utils import send_payment_success_email
+    from accounts.email_utils import send_payment_success_email_async
 
     customer = purchase.order.customer
     recipient_email = customer.email if customer else purchase.order.guest_email
@@ -42,7 +42,7 @@ def _send_success_email(purchase):
         return
 
     try:
-        send_payment_success_email(
+        send_payment_success_email_async(
             email=recipient_email,
             first_name=recipient_name or "Customer",
             order_id=str(purchase.order.id),
@@ -50,13 +50,13 @@ def _send_success_email(purchase):
             amount=str(purchase.amount),
             currency=purchase.currency,
         )
-        logger.info(f"Payment success email sent to {recipient_email}")
+        logger.info(f"Payment success email queued for {recipient_email}")
     except Exception as e:
         logger.error(f"Failed to send payment success email: {e}")
 
 
 def _send_failed_email(purchase):
-    from accounts.email_utils import send_payment_failed_email
+    from accounts.email_utils import send_payment_failed_email_async
 
     customer = purchase.order.customer
     recipient_email = customer.email if customer else purchase.order.guest_email
@@ -71,7 +71,7 @@ def _send_failed_email(purchase):
         return
 
     try:
-        send_payment_failed_email(
+        send_payment_failed_email_async(
             email=recipient_email,
             first_name=recipient_name or "Customer",
             order_id=str(purchase.order.id),
@@ -79,6 +79,6 @@ def _send_failed_email(purchase):
             amount=str(purchase.amount),
             currency=purchase.currency,
         )
-        logger.info(f"Payment failed email sent to {recipient_email}")
+        logger.info(f"Payment failed email queued for {recipient_email}")
     except Exception as e:
         logger.error(f"Failed to send payment failed email: {e}")

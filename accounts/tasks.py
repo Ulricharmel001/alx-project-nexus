@@ -1,7 +1,8 @@
 import logging
 
+from celery import shared_task
 from django.conf import settings
-from django.core.mail import send_mail, EmailMultiAlternatives
+from django.core.mail import EmailMultiAlternatives, send_mail
 from django.core.signing import TimestampSigner
 from django.template.loader import render_to_string
 
@@ -11,6 +12,7 @@ logger = logging.getLogger(__name__)
 signer = TimestampSigner()
 
 
+@shared_task(max_retries=3, default_retry_delay=60)
 def send_verification_email(email, code):
     try:
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
@@ -57,6 +59,7 @@ Nexus Team
         }
 
 
+@shared_task(max_retries=3, default_retry_delay=60)
 def send_password_reset_email(user_email, user_first_name, reset_token, uid):
     try:
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
@@ -100,6 +103,7 @@ Ulrich E-Commerce Team
         }
 
 
+@shared_task(max_retries=3, default_retry_delay=60)
 def send_welcome_email(user_email, user_first_name):
     try:
         send_mail(
@@ -136,7 +140,11 @@ Ulrich - alx-project nexus
 
 # Payment event emails
 
-def send_payment_attempt_email(email, first_name, order_id, amount, currency, checkout_url):
+
+@shared_task(max_retries=3, default_retry_delay=60)
+def send_payment_attempt_email(
+    email, first_name, order_id, amount, currency, checkout_url
+):
     try:
         send_mail(
             subject="Payment Initiated \u2014 Nexus",
@@ -165,6 +173,7 @@ Nexus Team
         logger.error(f"Failed to send payment attempt email: {str(e)}")
 
 
+@shared_task(max_retries=3, default_retry_delay=60)
 def send_payment_success_email(email, first_name, order_id, tx_ref, amount, currency):
     try:
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")
@@ -200,6 +209,7 @@ Nexus Team
         logger.error(f"Failed to send payment success email: {str(e)}")
 
 
+@shared_task(max_retries=3, default_retry_delay=60)
 def send_payment_failed_email(email, first_name, order_id, tx_ref, amount, currency):
     try:
         frontend_url = getattr(settings, "FRONTEND_URL", "http://localhost:3000")

@@ -1,6 +1,7 @@
 import logging
 from io import BytesIO
 
+from celery import shared_task
 from django.conf import settings
 from django.core.mail import EmailMultiAlternatives
 from django.template.loader import render_to_string
@@ -19,6 +20,7 @@ from .models import Order, OrderItem, Purchase
 logger = logging.getLogger(__name__)
 
 
+@shared_task(max_retries=3, default_retry_delay=60)
 def generate_and_send_receipt_email(purchase_id):
     try:
         purchase = Purchase.objects.select_related(
@@ -27,7 +29,7 @@ def generate_and_send_receipt_email(purchase_id):
 
         if purchase.status != "completed":
             logger.warning(
-                f"Attempted to generate receipt for non-completed purchase: {purchase_id}"
+                "Attempted receipt for non-completed " "purchase: %s", purchase_id
             )
             return False
 

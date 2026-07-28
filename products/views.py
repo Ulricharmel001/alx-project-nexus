@@ -16,7 +16,7 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
-from accounts.email_utils import send_payment_attempt_email
+from accounts.email_utils import send_payment_attempt_email_async
 from accounts.models import CustomUser
 
 from .chapa_service import ChapaService
@@ -27,7 +27,7 @@ from .serializers import (AddressSerializer, CategorySerializer,
                           ProductImageSerializer, ProductSerializer,
                           PurchaseSerializer, PurchaseVerificationSerializer,
                           ReviewSerializer)
-from .tasks import generate_and_send_receipt_email as _send_receipt
+from .tasks import generate_and_send_receipt_email as _send_receipt_task
 
 logger = logging.getLogger(__name__)
 
@@ -452,7 +452,7 @@ class PurchaseViewSet(viewsets.ModelViewSet):
         recipient_email = data.get("email")
         recipient_name = data.get("first_name", "Customer")
         try:
-            send_payment_attempt_email(
+            send_payment_attempt_email_async(
                 email=recipient_email,
                 first_name=recipient_name,
                 order_id=str(order.id),
@@ -537,7 +537,7 @@ class PurchaseViewSet(viewsets.ModelViewSet):
                     else None,
                 },
             )
-            _send_receipt(str(purchase.id))
+            _send_receipt_task.delay(str(purchase.id))
 
         elif purchase.status == "failed":
             # Nothing else to do — the signal handles the failed email
