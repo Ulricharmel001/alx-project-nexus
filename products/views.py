@@ -16,9 +16,7 @@ from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 
-from accounts.email_utils import (send_payment_attempt_email,
-                                  send_payment_failed_email,
-                                  send_payment_success_email)
+from accounts.email_utils import send_payment_attempt_email
 from accounts.models import CustomUser
 
 from .chapa_service import ChapaService
@@ -541,44 +539,9 @@ class PurchaseViewSet(viewsets.ModelViewSet):
             )
             _send_receipt(str(purchase.id))
 
-            # Send payment success notification
-            customer = purchase.order.customer
-            recipient_email = customer.email if customer else purchase.order.guest_email
-            recipient_name = (
-                customer.first_name if customer else purchase.order.guest_first_name
-            )
-            if recipient_email:
-                try:
-                    send_payment_success_email(
-                        email=recipient_email,
-                        first_name=recipient_name or "Customer",
-                        order_id=str(purchase.order.id),
-                        tx_ref=tx_ref,
-                        amount=str(purchase.amount),
-                        currency=purchase.currency,
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to send payment success email: {e}")
-
         elif purchase.status == "failed":
-            # Send payment failure notification
-            customer = purchase.order.customer
-            recipient_email = customer.email if customer else purchase.order.guest_email
-            recipient_name = (
-                customer.first_name if customer else purchase.order.guest_first_name
-            )
-            if recipient_email:
-                try:
-                    send_payment_failed_email(
-                        email=recipient_email,
-                        first_name=recipient_name or "Customer",
-                        order_id=str(purchase.order.id),
-                        tx_ref=tx_ref,
-                        amount=str(purchase.amount),
-                        currency=purchase.currency,
-                    )
-                except Exception as e:
-                    logger.warning(f"Failed to send payment failed email: {e}")
+            # Nothing else to do — the signal handles the failed email
+            pass
 
         return Response({"status": purchase.status})
 
