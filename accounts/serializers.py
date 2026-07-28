@@ -124,7 +124,9 @@ class ChangePasswordSerializer(serializers.Serializer):
             )
         if data.get("old_password") == data["new_password"]:
             raise serializers.ValidationError(
-                {"new_password": "New password must differ from old password."}  # pragma: allowlist secret
+                {
+                    "new_password": "New password must differ from old password."
+                }  # pragma: allowlist secret
             )
         return data
 
@@ -194,6 +196,27 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         if data["password"] != data["password2"]:
             raise serializers.ValidationError({"password": "Passwords didn't match."})
         return data
+
+    def save(self):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils.encoding import force_str
+        from django.utils.http import urlsafe_base64_decode
+
+        uidb64 = self.context.get("uidb64")
+        token = self.context.get("token")
+
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            user = CustomUser.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, CustomUser.DoesNotExist):
+            raise serializers.ValidationError("Invalid reset link.")
+
+        if not default_token_generator.check_token(user, token):
+            raise serializers.ValidationError("Reset link expired or invalid.")
+
+        user.set_password(self.validated_data["password"])
+        user.save()
+        return user
 
 
 class GoogleAuthSerializer(serializers.Serializer):

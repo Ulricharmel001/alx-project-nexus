@@ -222,8 +222,12 @@ class PasswordResetConfirmView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request, uidb64, token):
-        serializer = PasswordResetConfirmSerializer(data=request.data)
+        serializer = PasswordResetConfirmSerializer(
+            data=request.data,
+            context={"uidb64": uidb64, "token": token},
+        )
         if serializer.is_valid():
+            serializer.save()
             return Response(
                 {"message": "Password reset successfully"}, status=status.HTTP_200_OK
             )
@@ -421,8 +425,7 @@ class GoogleCallbackView(APIView):
                 )
             user, created = GoogleAuthHandler.get_or_create_user(google_user_data)
             if created:
-                code = store_verification_code(user.email)
-                send_verification_email(user.email, code)
+                send_welcome_email(user.email, user.first_name)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
             return Response(
                 {
@@ -511,8 +514,7 @@ class GoogleTokenView(APIView):
                 )
             user, created = GoogleAuthHandler.get_or_create_user(google_user_data)
             if created:
-                code = store_verification_code(user.email)
-                send_verification_email(user.email, code)
+                send_welcome_email(user.email, user.first_name)
             tokens = GoogleAuthHandler.get_tokens_for_user(user)
             return Response(
                 {
